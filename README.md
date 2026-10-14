@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="Logo.jpg" alt="Zine de Estudos Logo" width="300">
+  <img src="Img/Logo.jpg" alt="Zine de Estudos Logo" width="300">
 </p>
 
 <h1 align="center">⚡️ Zine de Estudos ⚡️</h1>
@@ -38,7 +38,7 @@ O **Zine de Estudos** é um projeto pessoal criado para ajudar estudantes a orga
 
 *(Aqui continuam as imagens que geramos anteriormente...)*
 ### Painel Principal e Pomodoro
-![Painel Pomodoro](image_8131fe.png)
+![Painel Pomodoro](Img/Principal)
 
 ### Metas do Dia e Acompanhamento
 ![Metas do Dia](image_813221.png)
