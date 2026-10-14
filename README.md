@@ -38,16 +38,16 @@ O **Zine de Estudos** é um projeto pessoal criado para ajudar estudantes a orga
 
 *(Aqui continuam as imagens que geramos anteriormente...)*
 ### Painel Principal e Pomodoro
-![Painel Pomodoro](Img/Principal)
+![Painel Pomodoro](Img/Principal.jpg)
 
 ### Metas do Dia e Acompanhamento
-![Metas do Dia](image_813221.png)
+![Metas do Dia](Img/Metas.jpg)
 
 ### Estatísticas e Constância
-![Gráficos de Constância](image_813241.png)
+![Gráficos de Constância](Img/Constancia.jpg)
 
 ### Mapa de Calor e Histórico (Registro de Combate)
-![Mapa de Calor](image_8134ef.png)
+![Mapa de Calor](Img/Mapa.jpg)
 
 ---
 
