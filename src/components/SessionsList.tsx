@@ -6,12 +6,12 @@ import {
   Trash2,
   Undo2,
   Plus,
-  BookOpen,
   Search,
 } from 'lucide-react';
 import { StudySession, Subject } from '../types';
 import { useI18n } from '../i18n';
 import { EmptyStateMascot } from './illustrations/EmptyStateMascot';
+import { MaskingTapeStrip } from './illustrations/PunkStickers';
 
 interface SessionsListProps {
   sessions: StudySession[];
@@ -44,7 +44,6 @@ export const SessionsList: React.FC<SessionsListProps> = ({
     return map;
   }, [subjects]);
 
-  // Sort sessions latest date and createdAt first
   const sortedSessions = useMemo(() => {
     return [...sessions].sort((a, b) => {
       if (a.date !== b.date) {
@@ -54,7 +53,6 @@ export const SessionsList: React.FC<SessionsListProps> = ({
     });
   }, [sessions]);
 
-  // Filtered by search and subject
   const filteredSessions = useMemo(() => {
     return sortedSessions.filter((s) => {
       const matchSubj = filterSubject === 'all' || s.subjectId === filterSubject;
@@ -82,8 +80,7 @@ export const SessionsList: React.FC<SessionsListProps> = ({
 
   const handleUndo = () => {
     if (!deletedBackup) return;
-    // Restore session by calling edit/create logic in parent
-    onEditSession(deletedBackup); // will open or re-save
+    onEditSession(deletedBackup);
     setDeletedBackup(null);
     if (undoTimer) clearTimeout(undoTimer);
   };
@@ -91,17 +88,25 @@ export const SessionsList: React.FC<SessionsListProps> = ({
   return (
     <section
       id="sessoes"
-      className={`rounded-3xl p-6 sm:p-10 border transition-all relative overflow-hidden ${
-        isDark ? 'bg-[#181F26] border-[#2A3744]' : 'bg-white border-[#D6E0EA]'
+      className={`border-2 p-6 sm:p-8 relative overflow-hidden transition-all punk-shadow ${
+        isDark
+          ? 'bg-[#15181D] border-[#2E343D] text-[#F5F2EB]'
+          : 'bg-[#FFFFFF] border-[#000000] text-[#111317]'
       }`}
     >
+      <div className="absolute -top-2 left-16">
+        <MaskingTapeStrip width="w-24" rotation={-3} />
+      </div>
+
       {/* Toast Banner for Undo */}
       {deletedBackup && (
-        <div className="mb-6 p-3.5 rounded-2xl bg-[#0E7490] text-white flex items-center justify-between shadow-lg animate-in fade-in slide-in-from-top-2">
-          <span className="text-xs font-semibold">{t('sessions.sessionDeleted')}</span>
+        <div className="mb-6 p-3.5 bg-[#DC2626] text-white border-2 border-black shadow-[4px_4px_0px_#000000] flex items-center justify-between">
+          <span className="text-xs font-bold font-stencil uppercase tracking-wider">
+            {t('sessions.sessionDeleted')}
+          </span>
           <button
             onClick={handleUndo}
-            className="flex items-center gap-1.5 px-3 py-1 bg-white text-[#0E7490] rounded-xl text-xs font-bold hover:bg-slate-100 transition-colors"
+            className="flex items-center gap-1.5 px-3 py-1 bg-black text-white border border-white text-xs font-stencil uppercase tracking-wider hover:bg-neutral-900 transition-colors"
           >
             <Undo2 size={13} />
             <span>{t('sessions.undo')}</span>
@@ -112,22 +117,22 @@ export const SessionsList: React.FC<SessionsListProps> = ({
       {/* Header & Controls */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
         <div>
-          <h3 className="text-2xl sm:text-3xl font-extrabold font-display uppercase tracking-tight">
+          <h3 className="text-3xl sm:text-4xl font-black font-stencil uppercase tracking-wider">
             {t('sessions.title')}{' '}
-            <span className="font-serif-italic font-normal lowercase tracking-normal text-[#0E7490]">
+            <span className="text-[#DC2626] font-marker lowercase tracking-normal">
               {t('sessions.titleEmphasis')}
             </span>
           </h3>
-          <p className={`text-xs mt-0.5 ${isDark ? 'text-[#94A3B8]' : 'text-[#64748B]'}`}>
-            {sessions.length} sessões registradas no histórico
+          <p className={`text-xs mt-0.5 font-stencil uppercase tracking-wider ${isDark ? 'text-[#A2A9B5]' : 'text-[#3C424C]'}`}>
+            {sessions.length} sessões registradas no zine
           </p>
         </div>
 
         <button
           onClick={onOpenNewSessionModal}
-          className="px-4 py-2.5 rounded-2xl bg-[#0E7490] text-white text-xs font-bold tracking-wide hover:bg-[#0891B2] transition-colors flex items-center gap-2 self-start sm:self-auto shrink-0"
+          className="px-4 py-2 bg-[#DC2626] text-white text-xs font-bold font-stencil tracking-wider uppercase border-2 border-black punk-btn flex items-center gap-2 shrink-0"
         >
-          <Plus size={15} />
+          <Plus size={15} strokeWidth={3} />
           <span>{t('sessions.quickLog')}</span>
         </button>
       </div>
@@ -136,16 +141,16 @@ export const SessionsList: React.FC<SessionsListProps> = ({
       <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 mb-6">
         {/* Search Input */}
         <div className="relative flex-1">
-          <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 opacity-50" />
+          <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 opacity-60" />
           <input
             type="text"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            placeholder="Buscar por tópico, disciplina ou anotação..."
-            className={`w-full text-xs rounded-xl pl-9 pr-3.5 py-2.5 border transition-colors ${
+            placeholder="Buscar tópico, anotação ou disciplina..."
+            className={`w-full text-xs rounded-none pl-9 pr-3.5 py-2.5 border-2 border-black transition-colors ${
               isDark
-                ? 'bg-[#12161B] text-[#F1F5F9] border-[#2A3744] placeholder-[#475569]'
-                : 'bg-[#F8FAFC] text-[#0F172A] border-[#CBD5E1] placeholder-[#94A3B8]'
+                ? 'bg-[#0B0C0E] text-[#F5F2EB] placeholder-[#68707E]'
+                : 'bg-[#F3EFE6] text-[#111317] placeholder-[#A2A9B5]'
             }`}
           />
         </div>
@@ -154,10 +159,10 @@ export const SessionsList: React.FC<SessionsListProps> = ({
         <select
           value={filterSubject}
           onChange={(e) => setFilterSubject(e.target.value)}
-          className={`text-xs font-medium rounded-xl px-3.5 py-2.5 border transition-colors shrink-0 ${
+          className={`text-xs font-bold font-stencil uppercase tracking-wider px-3.5 py-2.5 border-2 border-black transition-colors shrink-0 ${
             isDark
-              ? 'bg-[#12161B] text-[#F1F5F9] border-[#2A3744]'
-              : 'bg-[#F8FAFC] text-[#0F172A] border-[#CBD5E1]'
+              ? 'bg-[#0B0C0E] text-[#F5F2EB]'
+              : 'bg-[#F3EFE6] text-[#111317]'
           }`}
         >
           <option value="all">{t('analytics.allSubjects')}</option>
@@ -173,62 +178,65 @@ export const SessionsList: React.FC<SessionsListProps> = ({
       {filteredSessions.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-12 text-center">
           <EmptyStateMascot theme={isDark ? 'dark' : 'light'} />
-          <h4 className="mt-4 font-bold font-display uppercase text-sm">
+          <h4 className="mt-4 font-black font-stencil uppercase text-base tracking-wider">
             {t('sessions.noSessions')}
           </h4>
-          <p className={`text-xs mt-1 max-w-sm ${isDark ? 'text-[#94A3B8]' : 'text-[#64748B]'}`}>
+          <p className={`text-xs mt-1 max-w-sm font-sans-body ${isDark ? 'text-[#A2A9B5]' : 'text-[#3C424C]'}`}>
             {t('sessions.startFirstSession')}
           </p>
           <button
             onClick={onOpenNewSessionModal}
-            className="mt-4 px-4 py-2 rounded-xl bg-[#0E7490] text-white text-xs font-bold hover:bg-[#0891B2]"
+            className="mt-4 px-4 py-2 bg-[#DC2626] text-white text-xs font-bold font-stencil uppercase tracking-wider border-2 border-black punk-btn"
           >
             {t('sessions.quickLog')}
           </button>
         </div>
       ) : (
-        /* Sessions Table / Cards */
+        /* Sessions Table / Cards as pasted clippings with hard shadow */
         <div className="flex flex-col gap-2.5">
-          {filteredSessions.slice(0, 50).map((session) => {
+          {filteredSessions.slice(0, 50).map((session, sIdx) => {
             const subject = subjectMap.get(session.subjectId);
+            // Slight rotation variation (±0.5 deg) for pasted flyer effect
+            const rotation = (sIdx % 3 - 1) * 0.4;
 
             return (
               <div
                 key={session.id}
-                className={`p-4 rounded-2xl border transition-all flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 group ${
+                style={{ transform: `rotate(${rotation}deg)` }}
+                className={`p-4 border-2 border-black transition-all flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 group punk-shadow-sm ${
                   isDark
-                    ? 'bg-[#141A21] border-[#25303D] hover:border-[#384656]'
-                    : 'bg-[#FAFCFF] border-[#E2E8F0] hover:border-[#CBD5E1]'
+                    ? 'bg-[#0B0C0E] hover:border-[#DC2626]'
+                    : 'bg-[#F3EFE6] hover:border-[#DC2626]'
                 }`}
               >
                 {/* Left: Subject Color & Info */}
                 <div className="flex items-start gap-3 flex-1 min-w-0">
                   <span
-                    className="w-3.5 h-3.5 rounded-full mt-1 shrink-0"
-                    style={{ backgroundColor: subject?.color || '#4A7A96' }}
+                    className="w-3.5 h-3.5 border border-black mt-1 shrink-0"
+                    style={{ backgroundColor: subject?.color || '#DC2626' }}
                     title={subject?.name}
                   />
 
                   <div className="flex-1 min-w-0">
                     <div className="flex flex-wrap items-center gap-2">
-                      <span className="font-bold text-xs font-display">
+                      <span className="font-bold text-xs uppercase tracking-wider font-stencil">
                         {subject?.name || 'Disciplina'}
                       </span>
                       {session.fromPomodoro && (
-                        <span className="text-[10px] px-2 py-0.2 rounded-full font-semibold bg-[#0E7490]/15 text-[#0E7490]">
+                        <span className="text-[10px] px-1.5 py-0.2 border border-[#DC2626] text-[#DC2626] font-bold font-stencil uppercase tracking-wider">
                           Pomodoro
                         </span>
                       )}
                     </div>
 
                     {session.topic && (
-                      <p className="text-xs font-medium mt-0.5 truncate text-slate-300 dark:text-slate-200">
+                      <p className="text-xs font-semibold mt-0.5 truncate text-slate-200 dark:text-slate-200 font-sans-body">
                         {session.topic}
                       </p>
                     )}
 
                     {session.notes && (
-                      <p className="text-[11px] opacity-70 mt-0.5 line-clamp-1 italic">
+                      <p className="text-[11px] opacity-75 mt-0.5 line-clamp-1 italic font-marker">
                         &ldquo;{session.notes}&rdquo;
                       </p>
                     )}
@@ -237,28 +245,28 @@ export const SessionsList: React.FC<SessionsListProps> = ({
 
                 {/* Right: Date, Duration, Actions */}
                 <div className="flex items-center gap-4 self-end sm:self-auto shrink-0 text-xs">
-                  <div className="flex items-center gap-1.5 opacity-80">
+                  <div className="flex items-center gap-1.5 opacity-80 font-stencil uppercase tracking-wider text-xs">
                     <Calendar size={13} />
                     <span>{formatDate(session.date)}</span>
                   </div>
 
-                  <div className="flex items-center gap-1.5 font-bold font-timer-mono text-[#0E7490]">
+                  <div className="flex items-center gap-1.5 font-bold font-timer-mono text-[#DC2626]">
                     <Clock size={13} />
                     <span>{formatMinutes(session.durationMinutes)}</span>
                   </div>
 
                   {/* Actions */}
-                  <div className="flex items-center gap-1 opacity-70 group-hover:opacity-100 transition-opacity">
+                  <div className="flex items-center gap-1 opacity-80 group-hover:opacity-100 transition-opacity">
                     <button
                       onClick={() => onEditSession(session)}
-                      className="p-1.5 rounded-lg hover:bg-slate-700/20 text-[#94A3B8] hover:text-white transition-colors"
+                      className="p-1.5 border border-transparent hover:border-black hover:bg-black/20 text-[#A2A9B5] hover:text-white transition-colors"
                       title={t('sessions.edit')}
                     >
                       <Pencil size={13} />
                     </button>
                     <button
                       onClick={() => handleDeleteWithUndo(session)}
-                      className="p-1.5 rounded-lg hover:bg-red-500/10 text-[#94A3B8] hover:text-red-500 transition-colors"
+                      className="p-1.5 border border-transparent hover:border-black hover:bg-red-500/20 text-[#A2A9B5] hover:text-[#DC2626] transition-colors"
                       title={t('sessions.delete')}
                     >
                       <Trash2 size={13} />

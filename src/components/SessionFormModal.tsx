@@ -3,6 +3,7 @@ import { X, Clock, Calendar, BookOpen, FileText } from 'lucide-react';
 import { StudySession, Subject } from '../types';
 import { useI18n } from '../i18n';
 import { getTodayDateString } from '../lib/storage';
+import { MaskingTapeStrip } from './illustrations/PunkStickers';
 
 interface SessionFormModalProps {
   isOpen: boolean;
@@ -89,34 +90,38 @@ export const SessionFormModal: React.FC<SessionFormModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-xs animate-in fade-in">
       <div
-        className={`w-full max-w-lg rounded-3xl p-6 sm:p-8 border shadow-2xl relative ${
+        className={`w-full max-w-lg p-6 sm:p-8 border-3 border-black shadow-[6px_6px_0px_#000000] relative ${
           isDark
-            ? 'bg-[#181F26] text-[#F4F6F8] border-[#2A3744]'
-            : 'bg-white text-[#0F172A] border-[#D6E0EA]'
+            ? 'bg-[#15181D] text-[#F5F2EB]'
+            : 'bg-[#FFFFFF] text-[#111317]'
         }`}
       >
+        <div className="absolute -top-3 left-8">
+          <MaskingTapeStrip width="w-24" rotation={-3} />
+        </div>
+
         {/* Header */}
-        <div className="flex items-center justify-between pb-4 border-b border-[#2A3744]/40">
-          <h3 className="text-xl font-bold font-display uppercase tracking-tight">
+        <div className="flex items-center justify-between pb-4 border-b-2 border-black">
+          <h3 className="text-2xl font-black font-stencil uppercase tracking-wider">
             {editingSession ? t('sessions.update') : t('sessions.quickLog')}
           </h3>
           <button
             onClick={onClose}
-            className="p-2 rounded-full hover:bg-slate-700/20 transition-colors"
+            className="p-1.5 border-2 border-black punk-btn bg-[#DC2626] text-white"
           >
             <X size={18} />
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="mt-5 flex flex-col gap-4">
+        <form onSubmit={handleSubmit} className="mt-5 flex flex-col gap-4 font-sans-body">
           {/* Subject Picker with inline link to manage subjects */}
           <div>
             <div className="flex items-center justify-between mb-1.5">
               <label
                 htmlFor="session-subject-select"
-                className="text-xs font-semibold flex items-center gap-1.5 opacity-80"
+                className="text-xs font-bold font-stencil uppercase tracking-wider flex items-center gap-1.5 opacity-80"
               >
                 <BookOpen size={14} />
                 {t('sessions.subject')}
@@ -124,7 +129,7 @@ export const SessionFormModal: React.FC<SessionFormModalProps> = ({
               <button
                 type="button"
                 onClick={onOpenSubjectManager}
-                className="text-xs text-[#0E7490] hover:underline font-semibold"
+                className="text-xs text-[#DC2626] hover:underline font-bold font-stencil uppercase tracking-wider"
               >
                 + {t('subjects.addNew')}
               </button>
@@ -133,10 +138,8 @@ export const SessionFormModal: React.FC<SessionFormModalProps> = ({
               id="session-subject-select"
               value={subjectId}
               onChange={(e) => setSubjectId(e.target.value)}
-              className={`w-full text-xs font-medium rounded-xl px-3.5 py-2.5 border transition-colors ${
-                isDark
-                  ? 'bg-[#12161B] text-[#F1F5F9] border-[#2A3744]'
-                  : 'bg-[#F8FAFC] text-[#0F172A] border-[#CBD5E1]'
+              className={`w-full text-xs font-bold font-stencil tracking-wider uppercase px-3.5 py-2.5 border-2 border-black transition-colors ${
+                isDark ? 'bg-[#0B0C0E] text-[#F5F2EB]' : 'bg-[#F3EFE6] text-[#111317]'
               }`}
             >
               {subjects
@@ -151,7 +154,7 @@ export const SessionFormModal: React.FC<SessionFormModalProps> = ({
 
           {/* Duration shortcuts & manual inputs */}
           <div>
-            <label className="text-xs font-semibold flex items-center gap-1.5 opacity-80 mb-1.5">
+            <label className="text-xs font-bold font-stencil uppercase tracking-wider flex items-center gap-1.5 opacity-80 mb-1.5">
               <Clock size={14} />
               {t('sessions.duration')}: {durationMinutes} min
             </label>
@@ -170,12 +173,12 @@ export const SessionFormModal: React.FC<SessionFormModalProps> = ({
                   key={sc.mins}
                   type="button"
                   onClick={() => handleShortcutClick(sc.mins)}
-                  className={`py-1.5 px-2 rounded-lg text-xs font-semibold border transition-all ${
+                  className={`py-1.5 px-2 font-stencil text-xs font-black uppercase tracking-wider border-2 border-black transition-all punk-btn ${
                     durationMinutes === sc.mins
-                      ? 'bg-[#0E7490] text-white border-[#0E7490]'
+                      ? 'bg-[#DC2626] text-white'
                       : isDark
-                      ? 'bg-[#12161B] text-[#94A3B8] border-[#2A3744] hover:text-white'
-                      : 'bg-[#F1F5F9] text-[#64748B] border-[#CBD5E1] hover:text-[#0F172A]'
+                      ? 'bg-[#0B0C0E] text-[#A2A9B5]'
+                      : 'bg-[#F3EFE6] text-black'
                   }`}
                 >
                   {sc.label}
@@ -192,12 +195,12 @@ export const SessionFormModal: React.FC<SessionFormModalProps> = ({
                   max="16"
                   value={hoursInput}
                   onChange={(e) => handleManualDurationChange(Number(e.target.value), minutesInput)}
-                  className={`w-full text-xs rounded-xl px-3 py-2 border ${
-                    isDark ? 'bg-[#12161B] border-[#2A3744]' : 'bg-[#F8FAFC] border-[#CBD5E1]'
+                  className={`w-full text-xs font-bold px-3 py-2 border-2 border-black ${
+                    isDark ? 'bg-[#0B0C0E]' : 'bg-[#F3EFE6]'
                   }`}
                   placeholder="Horas"
                 />
-                <span className="text-[10px] opacity-60 ml-1">{t('sessions.hours')}</span>
+                <span className="text-[10px] font-stencil uppercase tracking-wider opacity-60 ml-1">{t('sessions.hours')}</span>
               </div>
               <div className="flex-1">
                 <input
@@ -206,12 +209,12 @@ export const SessionFormModal: React.FC<SessionFormModalProps> = ({
                   max="59"
                   value={minutesInput}
                   onChange={(e) => handleManualDurationChange(hoursInput, Number(e.target.value))}
-                  className={`w-full text-xs rounded-xl px-3 py-2 border ${
-                    isDark ? 'bg-[#12161B] border-[#2A3744]' : 'bg-[#F8FAFC] border-[#CBD5E1]'
+                  className={`w-full text-xs font-bold px-3 py-2 border-2 border-black ${
+                    isDark ? 'bg-[#0B0C0E]' : 'bg-[#F3EFE6]'
                   }`}
                   placeholder="Minutos"
                 />
-                <span className="text-[10px] opacity-60 ml-1">{t('sessions.minutes')}</span>
+                <span className="text-[10px] font-stencil uppercase tracking-wider opacity-60 ml-1">{t('sessions.minutes')}</span>
               </div>
             </div>
           </div>
@@ -220,7 +223,7 @@ export const SessionFormModal: React.FC<SessionFormModalProps> = ({
           <div>
             <label
               htmlFor="session-date-input"
-              className="text-xs font-semibold flex items-center gap-1.5 opacity-80 mb-1.5"
+              className="text-xs font-bold font-stencil uppercase tracking-wider flex items-center gap-1.5 opacity-80 mb-1.5"
             >
               <Calendar size={14} />
               {t('sessions.date')}
@@ -230,8 +233,8 @@ export const SessionFormModal: React.FC<SessionFormModalProps> = ({
               type="date"
               value={date}
               onChange={(e) => setDate(e.target.value)}
-              className={`w-full text-xs rounded-xl px-3.5 py-2.5 border ${
-                isDark ? 'bg-[#12161B] border-[#2A3744]' : 'bg-[#F8FAFC] border-[#CBD5E1]'
+              className={`w-full text-xs font-bold px-3.5 py-2.5 border-2 border-black ${
+                isDark ? 'bg-[#0B0C0E]' : 'bg-[#F3EFE6]'
               }`}
             />
           </div>
@@ -240,7 +243,7 @@ export const SessionFormModal: React.FC<SessionFormModalProps> = ({
           <div>
             <label
               htmlFor="session-topic-input"
-              className="text-xs font-semibold flex items-center gap-1.5 opacity-80 mb-1.5"
+              className="text-xs font-bold font-stencil uppercase tracking-wider flex items-center gap-1.5 opacity-80 mb-1.5"
             >
               <FileText size={14} />
               {t('sessions.topic')}
@@ -250,9 +253,9 @@ export const SessionFormModal: React.FC<SessionFormModalProps> = ({
               type="text"
               value={topic}
               onChange={(e) => setTopic(e.target.value)}
-              placeholder="Ex.: Resolução da lista 2 de Algoritmos"
-              className={`w-full text-xs rounded-xl px-3.5 py-2.5 border ${
-                isDark ? 'bg-[#12161B] border-[#2A3744]' : 'bg-[#F8FAFC] border-[#CBD5E1]'
+              placeholder="Ex.: Resolução dos 15 problemas sem gabarito"
+              className={`w-full text-xs px-3.5 py-2.5 border-2 border-black ${
+                isDark ? 'bg-[#0B0C0E]' : 'bg-[#F3EFE6]'
               }`}
             />
           </div>
@@ -260,7 +263,7 @@ export const SessionFormModal: React.FC<SessionFormModalProps> = ({
           <div>
             <label
               htmlFor="session-notes-input"
-              className="text-xs font-semibold opacity-80 mb-1.5 block"
+              className="text-xs font-bold font-stencil uppercase tracking-wider opacity-80 mb-1.5 block"
             >
               {t('sessions.notes')}
             </label>
@@ -270,24 +273,24 @@ export const SessionFormModal: React.FC<SessionFormModalProps> = ({
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               placeholder="Ideias principais, dúvidas que surgiram..."
-              className={`w-full text-xs rounded-xl px-3.5 py-2 border resize-none ${
-                isDark ? 'bg-[#12161B] border-[#2A3744]' : 'bg-[#F8FAFC] border-[#CBD5E1]'
+              className={`w-full text-xs px-3.5 py-2 border-2 border-black resize-none ${
+                isDark ? 'bg-[#0B0C0E]' : 'bg-[#F3EFE6]'
               }`}
             />
           </div>
 
           {/* Submit */}
-          <div className="mt-4 flex items-center justify-end gap-2 pt-3 border-t border-[#2A3744]/40">
+          <div className="mt-4 flex items-center justify-end gap-2 pt-3 border-t-2 border-black">
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 rounded-xl text-xs font-semibold hover:opacity-80"
+              className="px-4 py-2 text-xs font-stencil uppercase tracking-wider font-bold hover:underline"
             >
               {t('common.cancel')}
             </button>
             <button
               type="submit"
-              className="px-6 py-2.5 rounded-xl bg-[#0E7490] text-white text-xs font-bold hover:bg-[#0891B2] transition-colors"
+              className="px-6 py-2.5 bg-[#DC2626] text-white text-xs font-stencil font-black uppercase tracking-wider border-2 border-black punk-btn"
             >
               {editingSession ? t('sessions.update') : t('sessions.save')}
             </button>

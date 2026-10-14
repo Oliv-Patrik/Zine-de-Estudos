@@ -1,7 +1,8 @@
 import { AppStateData, StudySession, GoalTask, Subject } from '../types';
 import { DEFAULT_SUBJECTS } from '../constants/palette';
 
-const STORAGE_KEY = 'caderno_estudos_state_v1';
+const PRIMARY_STORAGE_KEY = 'zine_estudos_state_v1';
+const LEGACY_STORAGE_KEY = 'caderno_estudos_state_v1';
 
 export function getTodayDateString(): string {
   const now = new Date();
@@ -26,26 +27,23 @@ export function generateSeedData(): AppStateData {
 
   // Generate 75 rich realistic study sessions over the last 90 days
   const sampleTopics = [
-    'Leitura dos capítulos 3 e 4',
+    'Leitura crítica e síntese do manifesto',
     'Resolução de problemas de grafos e DFS/BFS',
-    'Implementação de protocolo raft',
-    'Teoria dos tipos e sistemas de inferência',
-    'Arquitetura orientada a eventos e CQRS',
-    'Prototipação de componentes acessíveis',
-    'Análise assintótica e algoritmos gulosos',
-    'Consistência eventual e vetores de versão',
-    'Otimização de consultas e índices compostos',
+    'Arquitetura tolerante a falhas e protocolo Raft',
+    'Tipos avançados e compilação sem atalhos',
+    'Sistemas distribuídos e consistência eventual',
+    'Prototipação de zine e tipografia editorial',
+    'Complexidade assintótica e algoritmos gulosos',
+    'Controle de versão descentralizado',
+    'Otimização de índices e modelagem sem censura',
   ];
 
   const sessions: StudySession[] = [];
   let sessionIdCounter = 1;
 
-  // Ensure current active streak of 12 days including today
+  // Ensure current active streak of 14 days including today
   for (let offset = 0; offset < 90; offset++) {
-    // Determine if student studied on this day
-    // Last 12 days: every day has studies (creating 12-day active streak)
-    // Earlier: realistic pattern (about 70% of days)
-    const studied = offset < 12 || Math.sin(offset * 0.45) > -0.3;
+    const studied = offset < 14 || Math.sin(offset * 0.45) > -0.3;
     if (studied) {
       const dateStr = formatDateOffset(offset);
       const sessionCount = offset % 3 === 0 ? 2 : 1;
@@ -61,7 +59,7 @@ export function generateSeedData(): AppStateData {
           durationMinutes: duration,
           date: dateStr,
           topic: sampleTopics[(offset + s) % sampleTopics.length],
-          notes: s === 0 ? 'Foco profundo, sem distrações. Anotações feitas no bloco.' : undefined,
+          notes: s === 0 ? 'Foco absoluto. Anotações feitas no papel com caneta preta.' : undefined,
           fromPomodoro: duration % 25 === 0,
           createdAt: Date.now() - offset * 86400000 - s * 3600000,
         });
@@ -86,14 +84,14 @@ export function generateSeedData(): AppStateData {
     },
     {
       id: 'task-3',
-      text: 'Escrever resumo da aula de Sistemas Distribuídos',
+      text: 'Escrever resumo de Sistemas Distribuídos',
       completed: false,
       date: today,
       createdAt: Date.now() - 7200000,
     },
     {
       id: 'task-4',
-      text: 'Resolver 5 exercícios de fixação',
+      text: 'Resolver 5 exercícios da lista sem consultar gabarito',
       completed: false,
       date: today,
       createdAt: Date.now() - 3600000,
@@ -101,7 +99,7 @@ export function generateSeedData(): AppStateData {
   ];
 
   return {
-    version: 1,
+    version: 2,
     lastModified: Date.now(),
     subjects,
     sessions,
@@ -132,14 +130,13 @@ export function generateSeedData(): AppStateData {
 
 export function loadLocalState(): AppStateData {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
+    const raw = localStorage.getItem(PRIMARY_STORAGE_KEY) || localStorage.getItem(LEGACY_STORAGE_KEY);
     if (!raw) {
       const initial = generateSeedData();
       saveLocalState(initial);
       return initial;
     }
     const parsed = JSON.parse(raw) as AppStateData;
-    // Basic verification
     if (!parsed.subjects || !parsed.sessions) {
       const initial = generateSeedData();
       saveLocalState(initial);
@@ -158,16 +155,17 @@ export function saveLocalState(state: AppStateData): void {
       ...state,
       lastModified: Date.now(),
     };
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+    localStorage.setItem(PRIMARY_STORAGE_KEY, JSON.stringify(updated));
   } catch (err) {
     console.error('Failed to save to localStorage:', err);
   }
 }
 
 export function clearAllLocalData(): AppStateData {
-  localStorage.removeItem(STORAGE_KEY);
+  localStorage.removeItem(PRIMARY_STORAGE_KEY);
+  localStorage.removeItem(LEGACY_STORAGE_KEY);
   const emptyState: AppStateData = {
-    version: 1,
+    version: 2,
     lastModified: Date.now(),
     subjects: [...DEFAULT_SUBJECTS],
     sessions: [],

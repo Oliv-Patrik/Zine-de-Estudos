@@ -23,7 +23,6 @@ import { I18nProvider } from './i18n';
 import { Header } from './components/Header';
 import { HeroSection } from './components/HeroSection';
 import { PomodoroTimer } from './components/PomodoroTimer';
-import { FocusModeOverlay } from './components/FocusModeOverlay';
 import { DailyGoals } from './components/DailyGoals';
 import { ConsistencyCharts } from './components/ConsistencyCharts';
 import { SessionsList } from './components/SessionsList';
@@ -41,7 +40,6 @@ export default function App() {
   const [syncStatus, setSyncStatus] = useState<SyncStatus>('local');
   const [userProfile, setUserProfile] = useState<GoogleUserProfile | null>(null);
 
-  const [isFocusModeOpen, setIsFocusModeOpen] = useState(false);
   const [isSessionModalOpen, setIsSessionModalOpen] = useState(false);
   const [editingSession, setEditingSession] = useState<StudySession | null>(null);
   const [isSubjectModalOpen, setIsSubjectModalOpen] = useState(false);
@@ -75,12 +73,12 @@ export default function App() {
   useEffect(() => {
     if (appState.theme === 'dark') {
       document.documentElement.classList.add('dark');
-      document.body.style.backgroundColor = '#121518';
-      document.body.style.color = '#F4F6F8';
+      document.body.style.backgroundColor = '#0B0C0E';
+      document.body.style.color = '#F5F2EB';
     } else {
       document.documentElement.classList.remove('dark');
-      document.body.style.backgroundColor = '#F4F6F8';
-      document.body.style.color = '#121518';
+      document.body.style.backgroundColor = '#F3EFE6';
+      document.body.style.color = '#111317';
     }
   }, [appState.theme]);
 
@@ -451,7 +449,12 @@ export default function App() {
               subjects={appState.subjects}
               settings={appState.pomodoroSettings}
               onSessionComplete={(sess) => handleSaveSession(sess)}
-              onOpenFocusMode={() => setIsFocusModeOpen(true)}
+              onToggleSound={(enabled) =>
+                updateState((prev) => ({
+                  ...prev,
+                  pomodoroSettings: { ...prev.pomodoroSettings, soundEnabled: enabled },
+                }))
+              }
               selectedSubjectId={selectedSubjectId}
               onSelectSubjectId={setSelectedSubjectId}
               theme={appState.theme}
@@ -510,18 +513,6 @@ export default function App() {
         />
 
         {/* Modals & Full-screen Overlays */}
-        <FocusModeOverlay
-          isOpen={isFocusModeOpen}
-          onClose={() => setIsFocusModeOpen(false)}
-          remainingSeconds={25 * 60}
-          isRunning={false}
-          onTogglePlay={() => {}}
-          onSkip={() => {}}
-          mode="focus"
-          subject={activeSubject}
-          theme={appState.theme}
-        />
-
         <SessionFormModal
           isOpen={isSessionModalOpen}
           onClose={() => {

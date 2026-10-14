@@ -1,6 +1,6 @@
 {
-  "name": "Caderno de Estudos",
-  "description": "Aplicativo pessoal e autoral de acompanhamento de estudos com Pomodoro central, metas diárias, mapas de calor de constância e sincronização com Google Drive.",
+  "name": "Zine de Estudos",
+  "description": "Painel punk rock & DIY de rastreamento de aprendizado autônomo com Pomodoro, metas diárias, mapas de constância e sincronização com Google Drive.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

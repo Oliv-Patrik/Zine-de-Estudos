@@ -14,58 +14,53 @@ export const EmptyStateMascot: React.FC<{ className?: string; theme?: 'dark' | '
       className={className}
       aria-hidden="true"
     >
-      <rect
-        x="30"
-        y="40"
-        width="220"
-        height="125"
-        rx="8"
-        fill={isDark ? '#1C242C' : '#FFFFFF'}
-        stroke={isDark ? '#2D3A47' : '#D1DCE7'}
-        strokeWidth="2"
-      />
-      {/* Book spine middle fold */}
-      <line
-        x1="140"
-        y1="40"
-        x2="140"
-        y2="165"
-        stroke={isDark ? '#2D3A47' : '#D1DCE7'}
-        strokeWidth="2"
-        strokeDasharray="4 4"
+      {/* Torn Flyer pasted on wall with jagged bottom */}
+      <path
+        d="M 40 30 L 240 25 L 245 160 L 220 150 L 190 165 L 160 152 L 120 168 L 80 150 L 35 165 Z"
+        fill={isDark ? '#181C22' : '#FFFFFF'}
+        stroke="#000000"
+        strokeWidth="3.5"
       />
 
-      {/* Ruled lines on left page */}
-      <line x1="50" y1="65" x2="120" y2="65" stroke={isDark ? '#334155' : '#E2E8F0'} strokeWidth="2" strokeLinecap="round" />
-      <line x1="50" y1="85" x2="110" y2="85" stroke={isDark ? '#334155' : '#E2E8F0'} strokeWidth="2" strokeLinecap="round" />
-      <line x1="50" y1="105" x2="125" y2="105" stroke={isDark ? '#334155' : '#E2E8F0'} strokeWidth="2" strokeLinecap="round" />
-      <line x1="50" y1="125" x2="95" y2="125" stroke={isDark ? '#334155' : '#E2E8F0'} strokeWidth="2" strokeLinecap="round" />
+      {/* Tape on top corners */}
+      <polygon points="30,15 80,18 76,34 26,31" fill="#F5EBCB" opacity="0.9" stroke="#000000" strokeWidth="1.5" />
+      <polygon points="200,12 250,16 246,32 196,28" fill="#F5EBCB" opacity="0.9" stroke="#000000" strokeWidth="1.5" />
 
-      {/* Grid pattern on right page */}
-      <rect x="155" y="60" width="75" height="75" rx="4" fill={isDark ? '#161E26' : '#F1F5F9'} />
-      <line x1="173" y1="60" x2="173" y2="135" stroke={isDark ? '#253240' : '#E2E8F0'} strokeWidth="1" />
-      <line x1="192" y1="60" x2="192" y2="135" stroke={isDark ? '#253240' : '#E2E8F0'} strokeWidth="1" />
-      <line x1="211" y1="60" x2="211" y2="135" stroke={isDark ? '#253240' : '#E2E8F0'} strokeWidth="1" />
-      <line x1="155" y1="78" x2="230" y2="78" stroke={isDark ? '#253240' : '#E2E8F0'} strokeWidth="1" />
-      <line x1="155" y1="97" x2="230" y2="97" stroke={isDark ? '#253240' : '#E2E8F0'} strokeWidth="1" />
-      <line x1="155" y1="116" x2="230" y2="116" stroke={isDark ? '#253240' : '#E2E8F0'} strokeWidth="1" />
+      {/* Red cross stamp */}
+      <line x1="60" y1="55" x2="100" y2="95" stroke="#DC2626" strokeWidth="6" strokeLinecap="round" />
+      <line x1="100" y1="55" x2="60" y2="95" stroke="#DC2626" strokeWidth="6" strokeLinecap="round" />
 
-      {/* Diagonal geometric pencil pointing down */}
-      <g transform="translate(195, 30) rotate(42)">
-        <rect x="0" y="0" width="6" height="60" rx="1" fill="#0E7490" />
-        <polygon points="0,0 6,0 3,-12" fill="#E2E8F0" />
-        <polygon points="2,-8 4,-8 3,-12" fill="#121518" />
+      {/* Stencil text: EM BRANCO */}
+      <text
+        x="170"
+        y="75"
+        textAnchor="middle"
+        fontFamily="Bebas Neue, sans-serif"
+        fontSize="28"
+        fontWeight="bold"
+        fill={isDark ? '#F5F2EB' : '#000000'}
+        letterSpacing="2"
+      >
+        EM BRANCO
+      </text>
+
+      {/* Marker text: VAI DEIXAR? */}
+      <text
+        x="170"
+        y="110"
+        textAnchor="middle"
+        fontFamily="Permanent Marker, cursive"
+        fontSize="18"
+        fill="#DC2626"
+      >
+        VAI DEIXAR?
+      </text>
+
+      {/* Safety Pin pinned to paper */}
+      <g transform="translate(190, 120) rotate(-25)">
+        <path d="M 5 8 L 45 8 C 52 8, 52 18, 45 18 L 15 18 C 5 18, 5 10, 10 8" stroke="#D4D4D8" strokeWidth="2.5" fill="none" />
+        <rect x="40" y="5" width="12" height="8" rx="2" fill="#A1A1AA" stroke="#000000" strokeWidth="1" />
       </g>
-
-      {/* Cold geometric stars */}
-      <path
-        d="M 35 30 L 37 38 L 45 40 L 37 42 L 35 50 L 33 42 L 25 40 L 33 38 Z"
-        fill="#4A7A96"
-      />
-      <path
-        d="M 255 145 L 257 151 L 263 153 L 257 155 L 255 161 L 253 155 L 247 153 L 253 151 Z"
-        fill="#0E7490"
-      />
     </svg>
   );
 };

@@ -10,7 +10,8 @@ import {
 } from 'lucide-react';
 import { PomodoroSettings, AppStateData } from '../types';
 import { useI18n } from '../i18n';
-import { playSoftChime } from '../lib/audio';
+import { playGuitarPowerChord, playPunkSound } from '../lib/audio';
+import { MaskingTapeStrip } from './illustrations/PunkStickers';
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -53,7 +54,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
           onImportJson(parsed);
           onClose();
         } else {
-          alert('Arquivo JSON inválido. Certifique-se de que é um backup do Caderno de Estudos.');
+          alert('Arquivo JSON inválido. Certifique-se de que é um backup do Zine de Estudos.');
         }
       } catch (err) {
         alert('Erro ao ler arquivo JSON.');
@@ -63,25 +64,29 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-xs animate-in fade-in">
       <div
-        className={`w-full max-w-xl rounded-3xl p-6 sm:p-8 border shadow-2xl relative max-h-[90vh] overflow-y-auto ${
+        className={`w-full max-w-xl p-6 sm:p-8 border-3 border-black shadow-[6px_6px_0px_#000000] relative max-h-[90vh] overflow-y-auto ${
           isDark
-            ? 'bg-[#181F26] text-[#F4F6F8] border-[#2A3744]'
-            : 'bg-white text-[#0F172A] border-[#D6E0EA]'
+            ? 'bg-[#15181D] text-[#F5F2EB]'
+            : 'bg-[#FFFFFF] text-[#111317]'
         }`}
       >
+        <div className="absolute -top-3 left-10">
+          <MaskingTapeStrip width="w-24" rotation={-4} />
+        </div>
+
         {/* Header */}
-        <div className="flex items-center justify-between pb-4 border-b border-[#2A3744]/40">
-          <h3 className="text-xl font-bold font-display uppercase tracking-tight">
+        <div className="flex items-center justify-between pb-4 border-b-2 border-black">
+          <h3 className="text-2xl font-black font-stencil uppercase tracking-wider">
             {t('settings.title')}{' '}
-            <span className="font-serif-italic font-normal lowercase tracking-normal text-[#0E7490]">
+            <span className="text-[#DC2626] font-marker lowercase tracking-normal">
               {t('settings.titleEmphasis')}
             </span>
           </h3>
           <button
             onClick={onClose}
-            className="p-2 rounded-full hover:bg-slate-700/20 transition-colors"
+            className="p-1.5 border-2 border-black punk-btn bg-[#DC2626] text-white"
           >
             <X size={18} />
           </button>
@@ -89,15 +94,15 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
         <div className="mt-6 flex flex-col gap-6">
           {/* Section 1: Pomodoro Durations */}
-          <div className="p-5 rounded-2xl border border-[#2A3744]/60">
-            <h4 className="text-xs font-bold uppercase tracking-wider font-display text-[#0E7490] flex items-center gap-1.5 mb-3">
+          <div className="p-5 border-2 border-black">
+            <h4 className="text-xs font-black uppercase tracking-wider font-stencil text-[#DC2626] flex items-center gap-1.5 mb-3">
               <Clock size={15} />
               {t('settings.pomodoroCycles')}
             </h4>
 
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs font-sans-body">
               <div>
-                <label className="block opacity-70 mb-1">{t('settings.focusDuration')}</label>
+                <label className="block font-bold opacity-80 mb-1">{t('settings.focusDuration')}</label>
                 <input
                   type="number"
                   min="5"
@@ -106,14 +111,14 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   onChange={(e) =>
                     onUpdateSettings({ ...settings, focusMinutes: Number(e.target.value) })
                   }
-                  className={`w-full px-3 py-2 rounded-xl border ${
-                    isDark ? 'bg-[#12161B] border-[#2A3744]' : 'bg-[#F8FAFC] border-[#CBD5E1]'
+                  className={`w-full px-3 py-2 border-2 border-black font-bold ${
+                    isDark ? 'bg-[#0B0C0E]' : 'bg-[#F3EFE6]'
                   }`}
                 />
               </div>
 
               <div>
-                <label className="block opacity-70 mb-1">{t('settings.shortBreakDuration')}</label>
+                <label className="block font-bold opacity-80 mb-1">{t('settings.shortBreakDuration')}</label>
                 <input
                   type="number"
                   min="1"
@@ -122,14 +127,14 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   onChange={(e) =>
                     onUpdateSettings({ ...settings, shortBreakMinutes: Number(e.target.value) })
                   }
-                  className={`w-full px-3 py-2 rounded-xl border ${
-                    isDark ? 'bg-[#12161B] border-[#2A3744]' : 'bg-[#F8FAFC] border-[#CBD5E1]'
+                  className={`w-full px-3 py-2 border-2 border-black font-bold ${
+                    isDark ? 'bg-[#0B0C0E]' : 'bg-[#F3EFE6]'
                   }`}
                 />
               </div>
 
               <div>
-                <label className="block opacity-70 mb-1">{t('settings.longBreakDuration')}</label>
+                <label className="block font-bold opacity-80 mb-1">{t('settings.longBreakDuration')}</label>
                 <input
                   type="number"
                   min="5"
@@ -138,14 +143,14 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   onChange={(e) =>
                     onUpdateSettings({ ...settings, longBreakMinutes: Number(e.target.value) })
                   }
-                  className={`w-full px-3 py-2 rounded-xl border ${
-                    isDark ? 'bg-[#12161B] border-[#2A3744]' : 'bg-[#F8FAFC] border-[#CBD5E1]'
+                  className={`w-full px-3 py-2 border-2 border-black font-bold ${
+                    isDark ? 'bg-[#0B0C0E]' : 'bg-[#F3EFE6]'
                   }`}
                 />
               </div>
 
               <div>
-                <label className="block opacity-70 mb-1">{t('settings.cyclesCount')}</label>
+                <label className="block font-bold opacity-80 mb-1">{t('settings.cyclesCount')}</label>
                 <input
                   type="number"
                   min="1"
@@ -157,18 +162,18 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                       cyclesBeforeLongBreak: Number(e.target.value),
                     })
                   }
-                  className={`w-full px-3 py-2 rounded-xl border ${
-                    isDark ? 'bg-[#12161B] border-[#2A3744]' : 'bg-[#F8FAFC] border-[#CBD5E1]'
+                  className={`w-full px-3 py-2 border-2 border-black font-bold ${
+                    isDark ? 'bg-[#0B0C0E]' : 'bg-[#F3EFE6]'
                   }`}
                 />
               </div>
             </div>
 
             {/* Sound Toggle */}
-            <div className="mt-4 pt-3 border-t border-dashed border-[#2A3744]/40 flex items-center justify-between">
+            <div className="mt-4 pt-3 border-t-2 border-dashed border-black flex items-center justify-between">
               <label
                 htmlFor="settings-enable-sound-checkbox"
-                className="flex items-center gap-2 text-xs font-semibold cursor-pointer"
+                className="flex items-center gap-2 text-xs font-bold font-stencil uppercase tracking-wider cursor-pointer"
               >
                 <input
                   id="settings-enable-sound-checkbox"
@@ -177,15 +182,15 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   onChange={(e) =>
                     onUpdateSettings({ ...settings, soundEnabled: e.target.checked })
                   }
-                  className="rounded text-[#0E7490] focus:ring-0"
+                  className="rounded-none text-[#DC2626] focus:ring-0"
                 />
                 <span>{t('settings.enableSound')}</span>
               </label>
 
               <button
                 type="button"
-                onClick={() => playSoftChime('phaseComplete')}
-                className="text-xs px-2.5 py-1 rounded-lg border border-slate-600/30 hover:bg-slate-700/20 flex items-center gap-1.5"
+                onClick={() => playGuitarPowerChord('stageChange', 0.32)}
+                className="text-xs px-2.5 py-1 border-2 border-black font-stencil uppercase tracking-wider font-bold punk-btn flex items-center gap-1.5"
               >
                 <Volume2 size={13} />
                 <span>{t('settings.testSound')}</span>
@@ -194,18 +199,16 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
           </div>
 
           {/* Section 2: Backup & Data Management */}
-          <div className="p-5 rounded-2xl border border-[#2A3744]/60">
-            <h4 className="text-xs font-bold uppercase tracking-wider font-display text-[#0E7490] mb-3">
+          <div className="p-5 border-2 border-black">
+            <h4 className="text-xs font-black uppercase tracking-wider font-stencil text-[#DC2626] mb-3">
               {t('settings.backupSection')}
             </h4>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 font-stencil uppercase tracking-wider">
               <button
                 onClick={onExportJson}
-                className={`px-4 py-2.5 rounded-xl border text-xs font-bold flex items-center justify-center gap-2 transition-colors ${
-                  isDark
-                    ? 'bg-[#1A222B] border-[#2E3C4B] hover:bg-[#253240]'
-                    : 'bg-[#F8FAFC] border-[#CBD5E1] hover:bg-[#E2E8F0]'
+                className={`px-4 py-2.5 border-2 border-black text-xs font-black flex items-center justify-center gap-2 transition-colors punk-btn ${
+                  isDark ? 'bg-[#0B0C0E] text-white' : 'bg-white text-black'
                 }`}
               >
                 <Download size={14} />
@@ -214,10 +217,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
               <button
                 onClick={() => fileInputRef.current?.click()}
-                className={`px-4 py-2.5 rounded-xl border text-xs font-bold flex items-center justify-center gap-2 transition-colors ${
-                  isDark
-                    ? 'bg-[#1A222B] border-[#2E3C4B] hover:bg-[#253240]'
-                    : 'bg-[#F8FAFC] border-[#CBD5E1] hover:bg-[#E2E8F0]'
+                className={`px-4 py-2.5 border-2 border-black text-xs font-black flex items-center justify-center gap-2 transition-colors punk-btn ${
+                  isDark ? 'bg-[#0B0C0E] text-white' : 'bg-white text-black'
                 }`}
               >
                 <Upload size={14} />
@@ -233,10 +234,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
               <button
                 onClick={onLoadDemoData}
-                className={`px-4 py-2.5 rounded-xl border text-xs font-bold flex items-center justify-center gap-2 transition-colors ${
-                  isDark
-                    ? 'bg-[#1A222B] border-[#2E3C4B] hover:bg-[#253240]'
-                    : 'bg-[#F8FAFC] border-[#CBD5E1] hover:bg-[#E2E8F0]'
+                className={`px-4 py-2.5 border-2 border-black text-xs font-black flex items-center justify-center gap-2 transition-colors punk-btn ${
+                  isDark ? 'bg-[#0B0C0E] text-white' : 'bg-white text-black'
                 }`}
               >
                 <RefreshCw size={14} />
@@ -250,7 +249,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                     onClose();
                   }
                 }}
-                className="px-4 py-2.5 rounded-xl border border-red-500/30 text-red-400 hover:bg-red-500/10 text-xs font-bold flex items-center justify-center gap-2 transition-colors"
+                className="px-4 py-2.5 border-2 border-black bg-black text-[#DC2626] hover:bg-neutral-900 text-xs font-black flex items-center justify-center gap-2 transition-colors punk-btn"
               >
                 <Trash2 size={14} />
                 <span>{t('settings.clearAll')}</span>
@@ -262,7 +261,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
         <div className="mt-6 flex justify-end">
           <button
             onClick={onClose}
-            className="px-6 py-2 rounded-xl bg-[#0E7490] text-white text-xs font-bold hover:bg-[#0891B2]"
+            className="px-6 py-2 bg-[#DC2626] text-white text-xs font-black font-stencil uppercase tracking-wider border-2 border-black punk-btn"
           >
             {t('common.close')}
           </button>

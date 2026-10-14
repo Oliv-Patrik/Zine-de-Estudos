@@ -16,15 +16,15 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
 
   return (
     <nav
-      className={`md:hidden fixed bottom-0 left-0 right-0 z-40 h-16 border-t backdrop-blur-md flex items-center justify-around px-2 ${
+      className={`md:hidden fixed bottom-0 left-0 right-0 z-40 h-16 border-t-2 border-black flex items-center justify-around px-2 ${
         isDark
-          ? 'bg-[#121518]/95 border-[#222A33] text-[#94A3B8]'
-          : 'bg-[#FFFFFF]/95 border-[#D5DFE8] text-[#64748B]'
+          ? 'bg-[#0B0C0E]/95 text-[#A2A9B5]'
+          : 'bg-[#F3EFE6]/95 text-[#3C424C]'
       }`}
     >
       <a
         href="#pomodoro"
-        className="flex flex-col items-center justify-center gap-1 text-[10px] font-bold uppercase tracking-wider font-display hover:text-[#0E7490] transition-colors"
+        className="flex flex-col items-center justify-center gap-1 text-[11px] font-black uppercase tracking-wider font-stencil hover:text-[#DC2626] transition-colors"
       >
         <Timer size={18} />
         <span>{t('nav.pomodoro')}</span>
@@ -32,7 +32,7 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
 
       <a
         href="#metas"
-        className="flex flex-col items-center justify-center gap-1 text-[10px] font-bold uppercase tracking-wider font-display hover:text-[#0E7490] transition-colors"
+        className="flex flex-col items-center justify-center gap-1 text-[11px] font-black uppercase tracking-wider font-stencil hover:text-[#DC2626] transition-colors"
       >
         <Target size={18} />
         <span>{t('nav.goals')}</span>
@@ -41,15 +41,15 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
       {/* Center Quick Action Float */}
       <button
         onClick={onOpenNewSession}
-        className="w-12 h-12 rounded-full bg-[#0E7490] text-white flex items-center justify-center -mt-5 shadow-lg border-2 border-[#121518] hover:bg-[#0891B2] transition-transform active:scale-95"
+        className="w-12 h-12 bg-[#DC2626] text-white flex items-center justify-center -mt-5 border-2 border-black shadow-[3px_3px_0px_#000000] hover:bg-[#B91C1C] transition-transform active:translate-x-[2px] active:translate-y-[2px]"
         title={t('sessions.quickLog')}
       >
-        <Plus size={22} />
+        <Plus size={24} strokeWidth={3} />
       </button>
 
       <a
         href="#constancia"
-        className="flex flex-col items-center justify-center gap-1 text-[10px] font-bold uppercase tracking-wider font-display hover:text-[#0E7490] transition-colors"
+        className="flex flex-col items-center justify-center gap-1 text-[11px] font-black uppercase tracking-wider font-stencil hover:text-[#DC2626] transition-colors"
       >
         <BarChart2 size={18} />
         <span>{t('nav.analytics')}</span>
@@ -57,7 +57,7 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
 
       <a
         href="#sessoes"
-        className="flex flex-col items-center justify-center gap-1 text-[10px] font-bold uppercase tracking-wider font-display hover:text-[#0E7490] transition-colors"
+        className="flex flex-col items-center justify-center gap-1 text-[11px] font-black uppercase tracking-wider font-stencil hover:text-[#DC2626] transition-colors"
       >
         <BookOpen size={18} />
         <span>{t('nav.history')}</span>

@@ -11,20 +11,22 @@ import {
 } from 'lucide-react';
 import { Subject, PomodoroMode, PomodoroSettings, StudySession } from '../types';
 import { useI18n } from '../i18n';
-import { playSoftChime } from '../lib/audio';
-import { StickerTag, StarburstStar, SparkleDecal } from './illustrations/Stickers';
+import { playGuitarPowerChord, playPunkSound } from '../lib/audio';
+import { PunkSticker, MaskingTapeStrip, SafetyPinDecal } from './illustrations/PunkStickers';
+import { FocusModeOverlay } from './FocusModeOverlay';
 
 interface PomodoroTimerProps {
   subjects: Subject[];
   settings: PomodoroSettings;
   onSessionComplete: (session: Omit<StudySession, 'id' | 'createdAt'>) => void;
-  onOpenFocusMode: () => void;
+  onOpenFocusMode?: () => void;
   selectedSubjectId: string;
   onSelectSubjectId: (id: string) => void;
+  onToggleSound?: (enabled: boolean) => void;
   theme?: 'dark' | 'light';
 }
 
-const LOCAL_STORAGE_POMO = 'caderno_pomodoro_runtime_v1';
+const LOCAL_STORAGE_POMO = 'zine_pomodoro_runtime_v1';
 
 export const PomodoroTimer: React.FC<PomodoroTimerProps> = ({
   subjects,
@@ -33,6 +35,7 @@ export const PomodoroTimer: React.FC<PomodoroTimerProps> = ({
   onOpenFocusMode,
   selectedSubjectId,
   onSelectSubjectId,
+  onToggleSound,
   theme = 'dark',
 }) => {
   const { t } = useI18n();
@@ -45,8 +48,14 @@ export const PomodoroTimer: React.FC<PomodoroTimerProps> = ({
   const [currentCycle, setCurrentCycle] = useState<number>(1);
   const [sessionTopic, setSessionTopic] = useState<string>('');
   const [soundActive, setSoundActive] = useState<boolean>(settings.soundEnabled);
+  const [isFocusOverlayOpen, setIsFocusOverlayOpen] = useState<boolean>(false);
 
-  // Reference to avoid stale state in timer callbacks
+  // Synchronize internal soundActive state when changed from Settings
+  useEffect(() => {
+    setSoundActive(settings.soundEnabled);
+  }, [settings.soundEnabled]);
+
+  // Reference for stable timer callbacks
   const stateRef = useRef({
     mode,
     isRunning,
@@ -73,7 +82,7 @@ export const PomodoroTimer: React.FC<PomodoroTimerProps> = ({
     };
   });
 
-  // Load saved timer state on mount
+  // Load timer runtime from localStorage
   useEffect(() => {
     try {
       const raw = localStorage.getItem(LOCAL_STORAGE_POMO);
@@ -92,7 +101,6 @@ export const PomodoroTimer: React.FC<PomodoroTimerProps> = ({
             setTargetEndTime(parsed.targetEndTime);
             setIsRunning(true);
           } else {
-            // Timer expired while away
             setRemainingSeconds(0);
             setIsRunning(false);
             setTargetEndTime(null);
@@ -106,7 +114,7 @@ export const PomodoroTimer: React.FC<PomodoroTimerProps> = ({
     }
   }, []);
 
-  // Save timer state changes
+  // Save runtime
   useEffect(() => {
     try {
       localStorage.setItem(
@@ -126,7 +134,6 @@ export const PomodoroTimer: React.FC<PomodoroTimerProps> = ({
     }
   }, [mode, isRunning, targetEndTime, remainingSeconds, currentCycle, selectedSubjectId, sessionTopic]);
 
-  // Total seconds for current phase
   const getTotalSeconds = (targetMode: PomodoroMode): number => {
     switch (targetMode) {
       case 'focus':
@@ -140,7 +147,7 @@ export const PomodoroTimer: React.FC<PomodoroTimerProps> = ({
 
   const activeTotalSeconds = getTotalSeconds(mode);
 
-  // Precision countdown based on Date.now() and targetEndTime
+  // Precision countdown
   useEffect(() => {
     if (!isRunning || !targetEndTime) return;
 
@@ -153,12 +160,12 @@ export const PomodoroTimer: React.FC<PomodoroTimerProps> = ({
         clearInterval(interval);
         handlePhaseComplete();
       }
-    }, 250);
+    }, 200);
 
     return () => clearInterval(interval);
   }, [isRunning, targetEndTime]);
 
-  // Synchronize document tab title with remaining countdown
+  // Synchronize document title
   useEffect(() => {
     const mins = Math.floor(remainingSeconds / 60);
     const secs = remainingSeconds % 60;
@@ -176,7 +183,7 @@ export const PomodoroTimer: React.FC<PomodoroTimerProps> = ({
     };
   }, [remainingSeconds, isRunning, mode, t]);
 
-  // Spacebar shortcut to Start/Pause
+  // Spacebar to start/pause
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.code === 'Space' && !(e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement)) {
@@ -196,6 +203,7 @@ export const PomodoroTimer: React.FC<PomodoroTimerProps> = ({
     const end = Date.now() + remainingSeconds * 1000;
     setTargetEndTime(end);
     setIsRunning(true);
+    if (soundActive) playPunkSound('click', 0.15);
   };
 
   const handlePause = () => {
@@ -206,19 +214,25 @@ export const PomodoroTimer: React.FC<PomodoroTimerProps> = ({
     }
     setIsRunning(false);
     setTargetEndTime(null);
+    if (soundActive) playPunkSound('click', 0.15);
   };
 
   const handleReset = (targetMode = mode) => {
     setIsRunning(false);
     setTargetEndTime(null);
     setRemainingSeconds(getTotalSeconds(targetMode));
+    if (soundActive) playPunkSound('click', 0.15);
   };
 
   const handleSwitchMode = (newMode: PomodoroMode) => {
+    if (newMode === mode) return;
     setMode(newMode);
     setIsRunning(false);
     setTargetEndTime(null);
     setRemainingSeconds(getTotalSeconds(newMode));
+    if (soundActive) {
+      playGuitarPowerChord(newMode === 'focus' ? 'breakEnd' : 'stageChange', 0.28);
+    }
   };
 
   const handlePhaseComplete = () => {
@@ -226,23 +240,26 @@ export const PomodoroTimer: React.FC<PomodoroTimerProps> = ({
     setIsRunning(false);
     setTargetEndTime(null);
 
-    // Audio chime
+    // Audio Power Chord Guitar Synthesizer on stage alternate!
     if (current.soundActive) {
-      playSoftChime('phaseComplete');
+      if (current.mode === 'focus') {
+        playGuitarPowerChord('focusEnd', 0.32);
+      } else {
+        playGuitarPowerChord('breakEnd', 0.3);
+      }
     }
 
     // Browser Notification
     if ('Notification' in window && Notification.permission === 'granted' && current.settings.notificationsEnabled) {
-      const title = current.mode === 'focus' ? 'Foco Concluído!' : 'Pausa Concluída!';
+      const title = current.mode === 'focus' ? 'Round Destruído!' : 'Pausa Encerrada!';
       const body =
         current.mode === 'focus'
-          ? 'Excelente trabalho! Hora de respirar e fazer uma pausa.'
-          : 'Pausa encerrada. Vamos voltar ao foco?';
-      new Notification(title, { body, icon: '/favicon.ico' });
+          ? 'Bloco concluído com atitude. Hora de respirar!'
+          : 'Pausa encerrada. Hora de voltar pro combate!';
+      new Notification(title, { body, icon: '/favicon.svg' });
     }
 
     if (current.mode === 'focus') {
-      // Record completed session automatically
       const today = new Date().toISOString().slice(0, 10);
       onSessionComplete({
         subjectId: current.selectedSubjectId || subjects[0]?.id || '',
@@ -252,12 +269,10 @@ export const PomodoroTimer: React.FC<PomodoroTimerProps> = ({
         fromPomodoro: true,
       });
 
-      // Advance cycle
       const nextCycle =
         current.currentCycle < current.settings.cyclesBeforeLongBreak ? current.currentCycle + 1 : 1;
       setCurrentCycle(nextCycle);
 
-      // If finished the 4th cycle -> long break, otherwise short break
       if (current.currentCycle >= current.settings.cyclesBeforeLongBreak) {
         setMode('longBreak');
         setRemainingSeconds(current.settings.longBreakMinutes * 60);
@@ -266,17 +281,11 @@ export const PomodoroTimer: React.FC<PomodoroTimerProps> = ({
         setRemainingSeconds(current.settings.shortBreakMinutes * 60);
       }
     } else {
-      // Returned from break to focus
       setMode('focus');
       setRemainingSeconds(current.settings.focusMinutes * 60);
     }
   };
 
-  const handleSkip = () => {
-    handlePhaseComplete();
-  };
-
-  // Progress calculations
   const progressFraction = Math.max(0, Math.min(1, 1 - remainingSeconds / activeTotalSeconds));
   const radius = 135;
   const circumference = 2 * Math.PI * radius;
@@ -288,38 +297,35 @@ export const PomodoroTimer: React.FC<PomodoroTimerProps> = ({
 
   return (
     <div className="relative w-full max-w-2xl mx-auto flex flex-col items-center">
-      {/* Playful Stickers floating around timer */}
-      <div className="absolute -top-3 -left-4 z-20 hidden sm:block">
-        <StickerTag
-          text={mode === 'focus' ? t('stickers.focus') : t('stickers.zen')}
-          variant="teal"
-          rotation={-5}
-          icon={<StarburstStar size={14} color="#FFFFFF" />}
-        />
+      {/* Decorative Tape & Safety Pin on timer container */}
+      <div className="absolute -top-3 left-6 z-20">
+        <MaskingTapeStrip width="w-28" rotation={-3} />
       </div>
-
       <div className="absolute -bottom-3 -right-2 z-20 hidden sm:block">
-        <StickerTag
+        <PunkSticker
           text={`${t('pomodoro.cycleIndicator', { current: currentCycle, total: settings.cyclesBeforeLongBreak })}`}
-          variant="slate"
-          rotation={4}
+          variant="black"
+          rotation={3}
         />
       </div>
+      <div className="absolute top-2 -right-4 z-20 hidden sm:block">
+        <SafetyPinDecal size={30} rotation={25} />
+      </div>
 
-      {/* Main Center Card */}
+      {/* Main Center Card (Pasted Xerox Flyer with Hard Shadow) */}
       <div
-        className={`w-full rounded-3xl p-6 sm:p-8 border transition-all relative overflow-hidden shadow-sm ${
+        className={`w-full p-6 sm:p-8 border-2 transition-all relative overflow-hidden punk-shadow ${
           isDark
-            ? 'bg-[#181F26] border-[#2A3744]'
-            : 'bg-[#FFFFFF] border-[#D6E0EA]'
+            ? 'bg-[#15181D] border-[#2E343D] text-[#F5F2EB]'
+            : 'bg-[#FFFFFF] border-[#000000] text-[#111317]'
         }`}
       >
-        {/* Header row inside timer: Phase tabs & sound/focus toggles */}
+        {/* Header row: Phase tabs & sound/focus toggles */}
         <div className="flex items-center justify-between gap-2 mb-6">
           {/* Segmented Phase Switcher */}
           <div
-            className={`inline-flex items-center p-1 rounded-xl text-xs font-semibold ${
-              isDark ? 'bg-[#12161B]' : 'bg-[#EDF2F7]'
+            className={`inline-flex items-center p-1 border-2 border-black ${
+              isDark ? 'bg-[#0B0C0E]' : 'bg-[#EAE4D6]'
             }`}
           >
             {(['focus', 'shortBreak', 'longBreak'] as PomodoroMode[]).map((m) => {
@@ -328,12 +334,12 @@ export const PomodoroTimer: React.FC<PomodoroTimerProps> = ({
                 <button
                   key={m}
                   onClick={() => handleSwitchMode(m)}
-                  className={`px-3 py-1.5 rounded-lg whitespace-nowrap transition-all duration-150 ${
+                  className={`px-3 py-1.5 font-stencil text-xs uppercase tracking-wider transition-all duration-100 ${
                     active
-                      ? 'bg-[#0E7490] text-white shadow-sm'
+                      ? 'bg-[#DC2626] text-white shadow-[2px_2px_0px_#000000]'
                       : isDark
-                      ? 'text-[#94A3B8] hover:text-[#F1F5F9]'
-                      : 'text-[#64748B] hover:text-[#0F172A]'
+                      ? 'text-[#A2A9B5] hover:text-white'
+                      : 'text-[#3C424C] hover:text-black'
                   }`}
                 >
                   {m === 'focus'
@@ -346,31 +352,33 @@ export const PomodoroTimer: React.FC<PomodoroTimerProps> = ({
             })}
           </div>
 
-          {/* Quick utility controls (Sound toggle, Focus mode full-screen) */}
+          {/* Quick utility controls (Sound, Focus mode) */}
           <div className="flex items-center gap-1.5">
             <button
               onClick={() => {
                 const next = !soundActive;
                 setSoundActive(next);
-                if (next) playSoftChime('tick');
+                if (onToggleSound) {
+                  onToggleSound(next);
+                }
+                if (next) playGuitarPowerChord('stageChange', 0.28);
               }}
-              title={soundActive ? 'Mudo' : 'Ativar som'}
-              className={`p-2 rounded-xl text-xs transition-colors ${
-                isDark
-                  ? 'text-[#94A3B8] hover:text-white hover:bg-[#232D37]'
-                  : 'text-[#64748B] hover:text-[#0F172A] hover:bg-[#E2E8F0]'
+              title={soundActive ? 'Silenciar som de guitarra' : 'Ativar som de guitarra'}
+              className={`p-2 border-2 border-black punk-btn text-xs ${
+                isDark ? 'bg-[#0B0C0E] text-[#F5F2EB]' : 'bg-white text-black'
               }`}
             >
-              {soundActive ? <Volume2 size={16} /> : <VolumeX size={16} />}
+              {soundActive ? <Volume2 size={16} className="text-[#DC2626]" /> : <VolumeX size={16} className="opacity-50" />}
             </button>
 
             <button
-              onClick={onOpenFocusMode}
+              onClick={() => {
+                setIsFocusOverlayOpen(true);
+                if (onOpenFocusMode) onOpenFocusMode();
+              }}
               title={t('pomodoro.focusMode')}
-              className={`p-2 rounded-xl text-xs transition-colors ${
-                isDark
-                  ? 'text-[#94A3B8] hover:text-white hover:bg-[#232D37]'
-                  : 'text-[#64748B] hover:text-[#0F172A] hover:bg-[#E2E8F0]'
+              className={`p-2 border-2 border-black punk-btn text-xs ${
+                isDark ? 'bg-[#0B0C0E] text-[#F5F2EB]' : 'bg-white text-black'
               }`}
             >
               <Maximize2 size={16} />
@@ -378,7 +386,7 @@ export const PomodoroTimer: React.FC<PomodoroTimerProps> = ({
           </div>
         </div>
 
-        {/* Circular Dial & Big Typography Timer */}
+        {/* Circular Dial with screenprint chalk/tinta stroke */}
         <div className="relative flex items-center justify-center py-4">
           <svg className="w-68 h-68 sm:w-80 sm:h-80 -rotate-90 transform" viewBox="0 0 320 320">
             {/* Background Track Ring */}
@@ -386,34 +394,30 @@ export const PomodoroTimer: React.FC<PomodoroTimerProps> = ({
               cx="160"
               cy="160"
               r={radius}
-              className={isDark ? 'stroke-[#222C37]' : 'stroke-[#E2E8F0]'}
-              strokeWidth="10"
+              className={isDark ? 'stroke-[#252B33]' : 'stroke-[#E5E0D5]'}
+              strokeWidth="12"
               fill="transparent"
             />
-            {/* Animated Active Progress Ring */}
+            {/* Ink/Chalk Texture Ring with Dash Pattern */}
             <circle
               cx="160"
               cy="160"
               r={radius}
-              stroke="#0E7490"
-              strokeWidth="10"
+              stroke="#DC2626"
+              strokeWidth="12"
               strokeDasharray={circumference}
               strokeDashoffset={strokeDashoffset}
-              strokeLinecap="round"
+              strokeLinecap="square"
               fill="transparent"
-              className="transition-[stroke-dashoffset] duration-300 ease-linear"
+              className="transition-[stroke-dashoffset] duration-200 ease-linear"
             />
           </svg>
 
           {/* Timer Display inside the Ring */}
           <div className="absolute inset-0 flex flex-col items-center justify-center text-center select-none pointer-events-none">
-            {/* Cycle indicator */}
+            {/* Round indicator stamp */}
             <div className="flex items-center gap-1.5 mb-1">
-              <span
-                className={`text-[11px] font-bold tracking-wider uppercase font-display px-2.5 py-0.5 rounded-full ${
-                  isDark ? 'bg-[#222C37] text-[#94A3B8]' : 'bg-[#E2E8F0] text-[#475569]'
-                }`}
-              >
+              <span className="punk-stamp text-xs font-black px-2 py-0.5">
                 {t('pomodoro.cycleIndicator', {
                   current: currentCycle,
                   total: settings.cyclesBeforeLongBreak,
@@ -421,21 +425,27 @@ export const PomodoroTimer: React.FC<PomodoroTimerProps> = ({
               </span>
             </div>
 
-            {/* Giant Monospace Tabular Clock */}
+            {/* Giant Tabular Clock (clean, high contrast WCAG AA) */}
             <div
-              className={`text-6xl sm:text-7xl font-bold font-timer-mono tracking-tight my-1 ${
-                isDark ? 'text-[#F4F6F8]' : 'text-[#0F172A]'
+              className={`text-6xl sm:text-7xl font-black font-timer-mono tracking-tight my-1 ${
+                isDark ? 'text-[#F5F2EB]' : 'text-[#111317]'
               }`}
             >
               {String(displayMinutes).padStart(2, '0')}:
               {String(displaySeconds).padStart(2, '0')}
             </div>
 
-            {/* Selected Subject Tag */}
+            {/* Selected Subject Tag with ink color dot */}
             {activeSubject && (
-              <div className="mt-1 flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-[#12161B]/60 text-white backdrop-blur-sm border border-white/10">
+              <div
+                className="mt-1 flex items-center gap-1.5 px-3 py-1 border-2 border-black font-stencil text-xs uppercase tracking-wider"
+                style={{
+                  backgroundColor: isDark ? '#0B0C0E' : '#FFFFFF',
+                  color: isDark ? '#F5F2EB' : '#111317',
+                }}
+              >
                 <span
-                  className="w-2.5 h-2.5 rounded-full shrink-0"
+                  className="w-2.5 h-2.5 rounded-none shrink-0 border border-black"
                   style={{ backgroundColor: activeSubject.color }}
                 />
                 <span className="truncate max-w-[150px]">{activeSubject.name}</span>
@@ -445,13 +455,11 @@ export const PomodoroTimer: React.FC<PomodoroTimerProps> = ({
         </div>
 
         {/* Subject Selector & Topic Input */}
-        <div className="mt-4 pt-4 border-t border-dashed border-[#2A3744]/40 flex flex-col gap-3">
+        <div className="mt-4 pt-4 border-t-2 border-dashed border-[#2E343D] flex flex-col gap-3">
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
             <label
               htmlFor="pomo-subject-select"
-              className={`text-xs font-semibold shrink-0 flex items-center gap-1.5 ${
-                isDark ? 'text-[#94A3B8]' : 'text-[#64748B]'
-              }`}
+              className="text-xs font-bold font-stencil uppercase tracking-wider shrink-0 flex items-center gap-1.5 opacity-80"
             >
               <BookOpen size={14} />
               {t('pomodoro.chooseSubject')}:
@@ -460,10 +468,10 @@ export const PomodoroTimer: React.FC<PomodoroTimerProps> = ({
               id="pomo-subject-select"
               value={selectedSubjectId}
               onChange={(e) => onSelectSubjectId(e.target.value)}
-              className={`w-full text-xs font-medium rounded-xl px-3 py-2 border transition-colors ${
+              className={`w-full text-xs font-bold rounded-none px-3 py-2 border-2 border-black transition-colors ${
                 isDark
-                  ? 'bg-[#12161B] text-[#F1F5F9] border-[#2A3744] focus:border-[#0E7490]'
-                  : 'bg-[#F8FAFC] text-[#0F172A] border-[#CBD5E1] focus:border-[#0E7490]'
+                  ? 'bg-[#0B0C0E] text-[#F5F2EB]'
+                  : 'bg-white text-[#111317]'
               }`}
             >
               {subjects
@@ -481,10 +489,10 @@ export const PomodoroTimer: React.FC<PomodoroTimerProps> = ({
             value={sessionTopic}
             onChange={(e) => setSessionTopic(e.target.value)}
             placeholder={t('pomodoro.topicPlaceholder')}
-            className={`w-full text-xs rounded-xl px-3.5 py-2 border transition-colors ${
+            className={`w-full text-xs rounded-none px-3.5 py-2.5 border-2 border-black transition-colors ${
               isDark
-                ? 'bg-[#12161B] text-[#F1F5F9] border-[#2A3744] placeholder-[#475569] focus:border-[#0E7490]'
-                : 'bg-[#F8FAFC] text-[#0F172A] border-[#CBD5E1] placeholder-[#94A3B8] focus:border-[#0E7490]'
+                ? 'bg-[#0B0C0E] text-[#F5F2EB] placeholder-[#68707E]'
+                : 'bg-white text-[#111317] placeholder-[#A2A9B5]'
             }`}
           />
         </div>
@@ -494,10 +502,8 @@ export const PomodoroTimer: React.FC<PomodoroTimerProps> = ({
           <button
             onClick={() => handleReset()}
             title={t('pomodoro.reset')}
-            className={`p-3 rounded-2xl border transition-all ${
-              isDark
-                ? 'bg-[#1A222B] text-[#94A3B8] border-[#2E3C4B] hover:text-white hover:bg-[#253240]'
-                : 'bg-[#F1F5F9] text-[#64748B] border-[#CBD5E1] hover:text-[#0F172A] hover:bg-[#E2E8F0]'
+            className={`p-3.5 border-2 border-black punk-btn ${
+              isDark ? 'bg-[#15181D] text-[#A2A9B5] hover:text-white' : 'bg-white text-black'
             }`}
           >
             <RotateCcw size={18} />
@@ -506,7 +512,7 @@ export const PomodoroTimer: React.FC<PomodoroTimerProps> = ({
           {isRunning ? (
             <button
               onClick={handlePause}
-              className="px-8 py-3.5 rounded-2xl bg-[#0E7490] text-white font-display font-bold text-sm tracking-wide shadow-md hover:bg-[#0891B2] transition-all flex items-center gap-2 transform active:scale-95"
+              className="px-8 py-3.5 bg-[#DC2626] text-white font-stencil font-black text-base tracking-wider uppercase border-2 border-black punk-btn flex items-center gap-2"
             >
               <Pause size={18} fill="currentColor" />
               <span>{t('pomodoro.pause')}</span>
@@ -514,7 +520,7 @@ export const PomodoroTimer: React.FC<PomodoroTimerProps> = ({
           ) : (
             <button
               onClick={handleStart}
-              className="px-8 py-3.5 rounded-2xl bg-[#0E7490] text-white font-display font-bold text-sm tracking-wide shadow-md hover:bg-[#0891B2] transition-all flex items-center gap-2 transform active:scale-95"
+              className="px-8 py-3.5 bg-[#DC2626] text-white font-stencil font-black text-base tracking-wider uppercase border-2 border-black punk-btn flex items-center gap-2"
             >
               <Play size={18} fill="currentColor" />
               <span>
@@ -526,33 +532,44 @@ export const PomodoroTimer: React.FC<PomodoroTimerProps> = ({
           )}
 
           <button
-            onClick={handleSkip}
+            onClick={handlePhaseComplete}
             title={t('pomodoro.skip')}
-            className={`p-3 rounded-2xl border transition-all ${
-              isDark
-                ? 'bg-[#1A222B] text-[#94A3B8] border-[#2E3C4B] hover:text-white hover:bg-[#253240]'
-                : 'bg-[#F1F5F9] text-[#64748B] border-[#CBD5E1] hover:text-[#0F172A] hover:bg-[#E2E8F0]'
+            className={`p-3.5 border-2 border-black punk-btn ${
+              isDark ? 'bg-[#15181D] text-[#A2A9B5] hover:text-white' : 'bg-white text-black'
             }`}
           >
             <SkipForward size={18} />
           </button>
         </div>
 
-        {/* Personality text quote below timer */}
-        <p
-          className={`text-center text-xs mt-5 italic font-serif-italic ${
-            isDark ? 'text-[#8A99AD]' : 'text-[#526071]'
-          }`}
-        >
+        {/* Marker handwriting quote below timer */}
+        <p className="text-center text-xs mt-5 font-marker text-[#DC2626]">
           &ldquo;
           {mode === 'focus'
             ? t('pomodoro.quote1')
             : mode === 'shortBreak'
             ? t('pomodoro.quote4')
-            : t('pomodoro.quote3')}
+            : t('pomodoro.quote2')}
           &rdquo;
         </p>
       </div>
+
+      {/* Full-Screen Distraction-Free Focus Overlay */}
+      <FocusModeOverlay
+        isOpen={isFocusOverlayOpen}
+        onClose={() => setIsFocusOverlayOpen(false)}
+        remainingSeconds={remainingSeconds}
+        isRunning={isRunning}
+        onTogglePlay={() => {
+          if (isRunning) handlePause();
+          else handleStart();
+        }}
+        onSkip={handlePhaseComplete}
+        mode={mode}
+        subject={activeSubject}
+        topic={sessionTopic}
+        theme={theme}
+      />
     </div>
   );
 };

@@ -7,12 +7,11 @@ import {
   ChevronLeft,
   ChevronRight,
   Download,
-  Filter,
 } from 'lucide-react';
 import { StudySession, Subject } from '../types';
 import { useI18n } from '../i18n';
 import { exportSessionsToCsv } from '../lib/csvExport';
-import { StickerTag, StarburstStar } from './illustrations/Stickers';
+import { FlameBadge, MaskingTapeStrip } from './illustrations/PunkStickers';
 
 interface ConsistencyChartsProps {
   sessions: StudySession[];
@@ -31,7 +30,7 @@ export const ConsistencyCharts: React.FC<ConsistencyChartsProps> = ({
   const isDark = theme === 'dark';
 
   const [period, setPeriod] = useState<PeriodType>('weekly');
-  const [periodOffset, setPeriodOffset] = useState<number>(0); // 0 = current, -1 = previous, etc.
+  const [periodOffset, setPeriodOffset] = useState<number>(0);
   const [selectedSubjectFilter, setSelectedSubjectFilter] = useState<string>('all');
   const [hoveredHeatmapDay, setHoveredHeatmapDay] = useState<{
     date: string;
@@ -43,14 +42,12 @@ export const ConsistencyCharts: React.FC<ConsistencyChartsProps> = ({
 
   const [hoveredBarIndex, setHoveredBarIndex] = useState<number | null>(null);
 
-  // Map of subject id to Subject
   const subjectMap = useMemo(() => {
     const map = new Map<string, Subject>();
     subjects.forEach((s) => map.set(s.id, s));
     return map;
   }, [subjects]);
 
-  // Daily totals map
   const dailyTotals = useMemo(() => {
     const map = new Map<string, { totalMinutes: number; sessionsCount: number; bySubject: Record<string, number> }>();
     sessions.forEach((s) => {
@@ -63,7 +60,6 @@ export const ConsistencyCharts: React.FC<ConsistencyChartsProps> = ({
     return map;
   }, [sessions]);
 
-  // Calculate streaks & total metrics
   const { currentStreak, bestStreak, totalAccumulatedMinutes, activeDaysCount } = useMemo(() => {
     const dates = Array.from(dailyTotals.keys()).sort();
     if (dates.length === 0) {
@@ -77,11 +73,9 @@ export const ConsistencyCharts: React.FC<ConsistencyChartsProps> = ({
 
     const activeDaysCount = dailyTotals.size;
 
-    // Streak calculation
     let maxStreak = 0;
     let tempStreak = 0;
 
-    // Check consecutive days
     const dateSet = new Set(dates);
     const today = new Date();
     const todayStr = today.toISOString().slice(0, 10);
@@ -90,9 +84,8 @@ export const ConsistencyCharts: React.FC<ConsistencyChartsProps> = ({
     yesterday.setDate(yesterday.getDate() - 1);
     const yesterdayStr = yesterday.toISOString().slice(0, 10);
 
-    // Current streak: count backwards from today or yesterday
     let curr = 0;
-    let checkDate = dateSet.has(todayStr) ? today : dateSet.has(yesterdayStr) ? yesterday : null;
+    const checkDate = dateSet.has(todayStr) ? today : dateSet.has(yesterdayStr) ? yesterday : null;
 
     if (checkDate) {
       const d = new Date(checkDate);
@@ -107,7 +100,6 @@ export const ConsistencyCharts: React.FC<ConsistencyChartsProps> = ({
       }
     }
 
-    // Longest streak
     for (let i = 0; i < dates.length; i++) {
       if (i === 0) {
         tempStreak = 1;
@@ -134,7 +126,6 @@ export const ConsistencyCharts: React.FC<ConsistencyChartsProps> = ({
     };
   }, [dailyTotals]);
 
-  // Compute Bars for Weekly, Monthly, or Yearly
   const chartData = useMemo(() => {
     const bars: Array<{
       label: string;
@@ -147,12 +138,10 @@ export const ConsistencyCharts: React.FC<ConsistencyChartsProps> = ({
     const now = new Date();
 
     if (period === 'weekly') {
-      // 7 days of the selected week
       const targetDate = new Date(now);
       targetDate.setDate(now.getDate() + periodOffset * 7);
 
-      // Start from Monday
-      const dayOfWeek = targetDate.getDay(); // 0 is Sunday
+      const dayOfWeek = targetDate.getDay();
       const diffToMonday = (dayOfWeek + 6) % 7;
       const monday = new Date(targetDate);
       monday.setDate(targetDate.getDate() - diffToMonday);
@@ -177,7 +166,7 @@ export const ConsistencyCharts: React.FC<ConsistencyChartsProps> = ({
               segments.push({
                 subjectId: sId,
                 minutes: mins,
-                color: subj?.color || '#4A7A96',
+                color: subj?.color || '#DC2626',
                 name: subj?.name || 'Disciplina',
               });
               total += mins;
@@ -194,7 +183,6 @@ export const ConsistencyCharts: React.FC<ConsistencyChartsProps> = ({
         });
       }
     } else if (period === 'monthly') {
-      // Days of the selected month
       const target = new Date(now.getFullYear(), now.getMonth() + periodOffset, 1);
       const year = target.getFullYear();
       const month = target.getMonth();
@@ -214,7 +202,7 @@ export const ConsistencyCharts: React.FC<ConsistencyChartsProps> = ({
               segments.push({
                 subjectId: sId,
                 minutes: mins,
-                color: subj?.color || '#4A7A96',
+                color: subj?.color || '#DC2626',
                 name: subj?.name || 'Disciplina',
               });
               total += mins;
@@ -230,7 +218,6 @@ export const ConsistencyCharts: React.FC<ConsistencyChartsProps> = ({
         });
       }
     } else {
-      // Yearly: 12 months
       const targetYear = now.getFullYear() + periodOffset;
       const monthNamesPt = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
       const monthNamesEn = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -255,7 +242,7 @@ export const ConsistencyCharts: React.FC<ConsistencyChartsProps> = ({
           return {
             subjectId: sId,
             minutes: mins,
-            color: subj?.color || '#4A7A96',
+            color: subj?.color || '#DC2626',
             name: subj?.name || 'Disciplina',
           };
         });
@@ -271,7 +258,6 @@ export const ConsistencyCharts: React.FC<ConsistencyChartsProps> = ({
     return bars;
   }, [period, periodOffset, selectedSubjectFilter, dailyTotals, sessions, subjectMap, language]);
 
-  // Statistics for the active period view
   const periodStats = useMemo(() => {
     let totalMinutes = 0;
     let activeDays = 0;
@@ -306,10 +292,8 @@ export const ConsistencyCharts: React.FC<ConsistencyChartsProps> = ({
     };
   }, [chartData]);
 
-  // Calculate annual heatmap 52 weeks grid (Sunday to Saturday or Monday to Sunday)
   const heatmapGrid = useMemo(() => {
     const today = new Date();
-    // 52 weeks = 364 days
     const totalDays = 52 * 7;
     const startDate = new Date(today);
     startDate.setDate(today.getDate() - totalDays + 1);
@@ -349,28 +333,27 @@ export const ConsistencyCharts: React.FC<ConsistencyChartsProps> = ({
     return weeks;
   }, [dailyTotals]);
 
-  // Max value for bar chart height scaling
   const maxBarValue = Math.max(60, ...chartData.map((b) => b.total));
 
   return (
     <section id="constancia" className="flex flex-col gap-8">
-      {/* 1. Summary Strip of Key Metrics */}
+      {/* 1. Summary Strip of Key Metrics with hard drop shadows */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Current Streak */}
         <div
-          className={`rounded-2xl p-5 border relative overflow-hidden transition-all ${
-            isDark ? 'bg-[#181F26] border-[#2A3744]' : 'bg-white border-[#D6E0EA]'
+          className={`p-5 border-2 border-black relative overflow-hidden punk-shadow ${
+            isDark ? 'bg-[#15181D] text-[#F5F2EB]' : 'bg-white text-[#111317]'
           }`}
         >
-          <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wider text-[#0E7490] font-display">
+          <div className="flex items-center justify-between text-xs font-black uppercase tracking-wider text-[#DC2626] font-stencil">
             <span>{t('analytics.currentStreak')}</span>
-            <Flame size={16} />
+            {currentStreak > 0 ? <FlameBadge size={16} /> : <Flame size={16} />}
           </div>
           <div className="flex items-baseline gap-2 mt-2">
-            <span className="text-4xl sm:text-5xl font-black font-display tracking-tight text-[#0E7490] tabular-nums">
+            <span className="text-5xl font-black font-stencil tracking-tight text-[#DC2626] tabular-nums">
               {currentStreak}
             </span>
-            <span className={`text-xs font-semibold ${isDark ? 'text-[#94A3B8]' : 'text-[#64748B]'}`}>
+            <span className={`text-xs font-bold uppercase tracking-wider font-stencil ${isDark ? 'text-[#A2A9B5]' : 'text-[#3C424C]'}`}>
               {t('stickers.streak')}
             </span>
           </div>
@@ -378,19 +361,19 @@ export const ConsistencyCharts: React.FC<ConsistencyChartsProps> = ({
 
         {/* Longest Streak */}
         <div
-          className={`rounded-2xl p-5 border transition-all ${
-            isDark ? 'bg-[#181F26] border-[#2A3744]' : 'bg-white border-[#D6E0EA]'
+          className={`p-5 border-2 border-black punk-shadow ${
+            isDark ? 'bg-[#15181D] text-[#F5F2EB]' : 'bg-white text-[#111317]'
           }`}
         >
-          <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wider text-[#4A7A96] font-display">
+          <div className="flex items-center justify-between text-xs font-black uppercase tracking-wider text-[#2563EB] font-stencil">
             <span>{t('analytics.bestStreak')}</span>
             <Trophy size={16} />
           </div>
           <div className="flex items-baseline gap-2 mt-2">
-            <span className="text-4xl sm:text-5xl font-black font-display tracking-tight text-[#4A7A96] tabular-nums">
+            <span className="text-5xl font-black font-stencil tracking-tight text-[#2563EB] tabular-nums">
               {bestStreak}
             </span>
-            <span className={`text-xs font-semibold ${isDark ? 'text-[#94A3B8]' : 'text-[#64748B]'}`}>
+            <span className={`text-xs font-bold uppercase tracking-wider font-stencil ${isDark ? 'text-[#A2A9B5]' : 'text-[#3C424C]'}`}>
               dias
             </span>
           </div>
@@ -398,16 +381,16 @@ export const ConsistencyCharts: React.FC<ConsistencyChartsProps> = ({
 
         {/* Total Time */}
         <div
-          className={`rounded-2xl p-5 border transition-all ${
-            isDark ? 'bg-[#181F26] border-[#2A3744]' : 'bg-white border-[#D6E0EA]'
+          className={`p-5 border-2 border-black punk-shadow ${
+            isDark ? 'bg-[#15181D] text-[#F5F2EB]' : 'bg-white text-[#111317]'
           }`}
         >
-          <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wider text-[#6B6D8F] font-display">
+          <div className="flex items-center justify-between text-xs font-black uppercase tracking-wider text-[#D97706] font-stencil">
             <span>{t('analytics.totalTime')}</span>
             <Clock size={16} />
           </div>
           <div className="flex items-baseline gap-2 mt-2">
-            <span className="text-3xl sm:text-4xl font-black font-display tracking-tight tabular-nums">
+            <span className="text-4xl font-black font-stencil tracking-tight tabular-nums">
               {formatMinutes(totalAccumulatedMinutes)}
             </span>
           </div>
@@ -415,19 +398,19 @@ export const ConsistencyCharts: React.FC<ConsistencyChartsProps> = ({
 
         {/* Active Days */}
         <div
-          className={`rounded-2xl p-5 border transition-all ${
-            isDark ? 'bg-[#181F26] border-[#2A3744]' : 'bg-white border-[#D6E0EA]'
+          className={`p-5 border-2 border-black punk-shadow ${
+            isDark ? 'bg-[#15181D] text-[#F5F2EB]' : 'bg-white text-[#111317]'
           }`}
         >
-          <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wider text-[#4E7A74] font-display">
+          <div className="flex items-center justify-between text-xs font-black uppercase tracking-wider text-[#4D7C0F] font-stencil">
             <span>{t('analytics.activeDays')}</span>
             <CalendarDays size={16} />
           </div>
           <div className="flex items-baseline gap-2 mt-2">
-            <span className="text-4xl sm:text-5xl font-black font-display tracking-tight text-[#4E7A74] tabular-nums">
+            <span className="text-5xl font-black font-stencil tracking-tight text-[#4D7C0F] tabular-nums">
               {activeDaysCount}
             </span>
-            <span className={`text-xs font-semibold ${isDark ? 'text-[#94A3B8]' : 'text-[#64748B]'}`}>
+            <span className={`text-xs font-bold uppercase tracking-wider font-stencil ${isDark ? 'text-[#A2A9B5]' : 'text-[#3C424C]'}`}>
               dias
             </span>
           </div>
@@ -436,16 +419,22 @@ export const ConsistencyCharts: React.FC<ConsistencyChartsProps> = ({
 
       {/* 2. Main Stacked Bar Chart & Navigation Controls */}
       <div
-        className={`rounded-3xl p-6 sm:p-8 border transition-all ${
-          isDark ? 'bg-[#181F26] border-[#2A3744]' : 'bg-white border-[#D6E0EA]'
+        className={`border-2 p-6 sm:p-8 relative punk-shadow ${
+          isDark
+            ? 'bg-[#15181D] border-[#2E343D] text-[#F5F2EB]'
+            : 'bg-white border-[#000000] text-[#111317]'
         }`}
       >
+        <div className="absolute -top-2 right-12">
+          <MaskingTapeStrip width="w-24" rotation={3} />
+        </div>
+
         {/* Controls Row */}
         <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4 mb-8">
           <div className="flex items-center gap-3">
-            <h3 className="text-2xl font-extrabold font-display uppercase tracking-tight">
+            <h3 className="text-3xl font-black font-stencil uppercase tracking-wider">
               {t('analytics.title')}{' '}
-              <span className="font-serif-italic font-normal lowercase tracking-normal text-[#0E7490]">
+              <span className="text-[#DC2626] font-marker lowercase tracking-normal">
                 {t('analytics.titleEmphasis')}
               </span>
             </h3>
@@ -454,8 +443,8 @@ export const ConsistencyCharts: React.FC<ConsistencyChartsProps> = ({
           <div className="flex flex-wrap items-center gap-2">
             {/* Period Switcher */}
             <div
-              className={`p-1 rounded-xl text-xs font-bold flex items-center ${
-                isDark ? 'bg-[#12161B]' : 'bg-[#F1F5F9]'
+              className={`p-1 border-2 border-black flex items-center ${
+                isDark ? 'bg-[#0B0C0E]' : 'bg-[#EAE4D6]'
               }`}
             >
               {(['weekly', 'monthly', 'yearly'] as PeriodType[]).map((p) => (
@@ -465,12 +454,12 @@ export const ConsistencyCharts: React.FC<ConsistencyChartsProps> = ({
                     setPeriod(p);
                     setPeriodOffset(0);
                   }}
-                  className={`px-3 py-1.5 rounded-lg transition-all ${
+                  className={`px-3 py-1 font-stencil text-xs uppercase tracking-wider transition-all ${
                     period === p
-                      ? 'bg-[#0E7490] text-white shadow-sm'
+                      ? 'bg-[#DC2626] text-white shadow-[2px_2px_0px_#000000]'
                       : isDark
-                      ? 'text-[#94A3B8] hover:text-white'
-                      : 'text-[#64748B] hover:text-[#0F172A]'
+                      ? 'text-[#A2A9B5] hover:text-white'
+                      : 'text-[#3C424C] hover:text-black'
                   }`}
                 >
                   {p === 'weekly'
@@ -484,21 +473,21 @@ export const ConsistencyCharts: React.FC<ConsistencyChartsProps> = ({
 
             {/* Navigation (Prev / Next / Today) */}
             <div
-              className={`flex items-center gap-1 p-1 rounded-xl text-xs ${
-                isDark ? 'bg-[#12161B]' : 'bg-[#F1F5F9]'
+              className={`flex items-center gap-1 p-1 border-2 border-black ${
+                isDark ? 'bg-[#0B0C0E]' : 'bg-[#EAE4D6]'
               }`}
             >
               <button
                 onClick={() => setPeriodOffset((o) => o - 1)}
-                className="p-1.5 rounded hover:bg-slate-700/30 transition-colors"
+                className="p-1 hover:text-[#DC2626] transition-colors"
                 title={t('analytics.previous')}
               >
                 <ChevronLeft size={16} />
               </button>
               <button
                 onClick={() => setPeriodOffset(0)}
-                className={`px-2.5 py-1 text-xs font-bold rounded ${
-                  periodOffset === 0 ? 'text-[#0E7490]' : 'opacity-80'
+                className={`px-2 py-0.5 text-xs font-bold font-stencil uppercase tracking-wider ${
+                  periodOffset === 0 ? 'text-[#DC2626]' : 'opacity-80'
                 }`}
               >
                 {t('analytics.today')}
@@ -506,7 +495,7 @@ export const ConsistencyCharts: React.FC<ConsistencyChartsProps> = ({
               <button
                 onClick={() => setPeriodOffset((o) => o + 1)}
                 disabled={periodOffset >= 0}
-                className="p-1.5 rounded hover:bg-slate-700/30 disabled:opacity-30 transition-colors"
+                className="p-1 disabled:opacity-30 hover:text-[#DC2626] transition-colors"
                 title={t('analytics.next')}
               >
                 <ChevronRight size={16} />
@@ -518,10 +507,8 @@ export const ConsistencyCharts: React.FC<ConsistencyChartsProps> = ({
               <select
                 value={selectedSubjectFilter}
                 onChange={(e) => setSelectedSubjectFilter(e.target.value)}
-                className={`text-xs font-medium rounded-xl px-3 py-2 border transition-colors ${
-                  isDark
-                    ? 'bg-[#12161B] text-[#F1F5F9] border-[#2A3744]'
-                    : 'bg-[#F8FAFC] text-[#0F172A] border-[#CBD5E1]'
+                className={`text-xs font-bold font-stencil uppercase tracking-wider px-3 py-1.5 border-2 border-black transition-colors ${
+                  isDark ? 'bg-[#0B0C0E] text-[#F5F2EB]' : 'bg-white text-[#111317]'
                 }`}
               >
                 <option value="all">{t('analytics.allSubjects')}</option>
@@ -533,13 +520,11 @@ export const ConsistencyCharts: React.FC<ConsistencyChartsProps> = ({
               </select>
             </div>
 
-            {/* CSV Export */}
+            {/* CSV Export Button */}
             <button
               onClick={() => exportSessionsToCsv(sessions, subjects, language)}
-              className={`px-3 py-2 text-xs font-bold rounded-xl border flex items-center gap-1.5 transition-colors ${
-                isDark
-                  ? 'bg-[#1A222B] text-[#94A3B8] border-[#2E3C4B] hover:text-white hover:bg-[#253240]'
-                  : 'bg-[#F1F5F9] text-[#64748B] border-[#CBD5E1] hover:text-[#0F172A]'
+              className={`px-3 py-1.5 text-xs font-bold font-stencil tracking-wider uppercase border-2 border-black flex items-center gap-1.5 punk-btn ${
+                isDark ? 'bg-[#15181D] text-white' : 'bg-white text-black'
               }`}
             >
               <Download size={13} />
@@ -548,8 +533,8 @@ export const ConsistencyCharts: React.FC<ConsistencyChartsProps> = ({
           </div>
         </div>
 
-        {/* Stacked Bars Graphic Area */}
-        <div className="relative w-full h-64 sm:h-72 flex items-end gap-1.5 sm:gap-3 pt-6 pb-2 border-b border-[#2A3744]/40">
+        {/* Stacked Bars Graphic Area with Screenprint Reticula */}
+        <div className="relative w-full h-64 sm:h-72 flex items-end gap-1.5 sm:gap-3 pt-6 pb-2 border-b-2 border-black">
           {chartData.map((bar, index) => {
             const heightPercent = maxBarValue > 0 ? (bar.total / maxBarValue) * 100 : 0;
             const isHovered = hoveredBarIndex === index;
@@ -561,27 +546,25 @@ export const ConsistencyCharts: React.FC<ConsistencyChartsProps> = ({
                 onMouseLeave={() => setHoveredBarIndex(null)}
                 className="flex-1 flex flex-col items-center h-full justify-end group cursor-pointer relative"
               >
-                {/* Floating Tooltip */}
+                {/* Floating Tooltip in Tape Tag style */}
                 {isHovered && bar.total > 0 && (
                   <div
-                    className={`absolute bottom-full mb-2 z-30 px-3 py-2 rounded-xl text-xs shadow-xl border whitespace-nowrap pointer-events-none ${
-                      isDark
-                        ? 'bg-[#12161B] text-white border-[#2A3744]'
-                        : 'bg-[#FFFFFF] text-[#0F172A] border-[#CBD5E1]'
+                    className={`absolute bottom-full mb-2 z-30 px-3 py-2 text-xs border-2 border-black shadow-[3px_3px_0px_#000000] whitespace-nowrap pointer-events-none ${
+                      isDark ? 'bg-[#0B0C0E] text-white' : 'bg-[#F5EBCB] text-black'
                     }`}
                   >
-                    <div className="font-bold flex items-center gap-1.5">
+                    <div className="font-stencil font-black flex items-center gap-1.5 uppercase text-sm">
                       <span>{bar.label}</span>
                       {bar.sublabel && <span className="opacity-70">({bar.sublabel})</span>}
                       <span>·</span>
-                      <span className="text-[#0E7490]">{formatMinutes(bar.total)}</span>
+                      <span className="text-[#DC2626]">{formatMinutes(bar.total)}</span>
                     </div>
-                    <div className="mt-1 flex flex-col gap-0.5 text-[11px] opacity-90">
+                    <div className="mt-1 flex flex-col gap-0.5 text-[11px] opacity-90 font-sans-body">
                       {bar.segments.map((seg, sIdx) => (
                         <div key={sIdx} className="flex items-center gap-2">
-                          <span className="w-2 h-2 rounded-full" style={{ backgroundColor: seg.color }} />
-                          <span className="truncate max-w-[120px]">{seg.name}:</span>
-                          <span className="font-semibold tabular-nums">{formatMinutes(seg.minutes)}</span>
+                          <span className="w-2.5 h-2.5 border border-black" style={{ backgroundColor: seg.color }} />
+                          <span className="truncate max-w-[120px] font-semibold">{seg.name}:</span>
+                          <span className="font-bold tabular-nums">{formatMinutes(seg.minutes)}</span>
                         </div>
                       ))}
                     </div>
@@ -590,10 +573,10 @@ export const ConsistencyCharts: React.FC<ConsistencyChartsProps> = ({
 
                 {/* Stacked Bar Container */}
                 <div
-                  className="w-full max-w-[42px] flex flex-col-reverse rounded-t-lg overflow-hidden transition-all duration-300"
+                  className="w-full max-w-[42px] flex flex-col-reverse border-2 border-black overflow-hidden transition-all duration-200"
                   style={{
                     height: `${Math.max(4, heightPercent)}%`,
-                    backgroundColor: bar.total === 0 ? (isDark ? '#222B35' : '#E2E8F0') : 'transparent',
+                    backgroundColor: bar.total === 0 ? (isDark ? '#22272F' : '#E5E0D5') : 'transparent',
                   }}
                 >
                   {bar.segments.map((seg, sIdx) => {
@@ -605,21 +588,21 @@ export const ConsistencyCharts: React.FC<ConsistencyChartsProps> = ({
                           height: `${segmentPercent}%`,
                           backgroundColor: seg.color,
                         }}
-                        className="w-full transition-opacity group-hover:opacity-90"
+                        className="w-full transition-opacity group-hover:opacity-90 border-t border-black/40"
                       />
                     );
                   })}
                 </div>
 
                 {/* Bar Labels below */}
-                <div className="mt-2 text-center select-none">
+                <div className="mt-2 text-center select-none font-stencil uppercase tracking-wider">
                   <span
-                    className={`text-[10px] sm:text-xs font-semibold block ${
+                    className={`text-[11px] sm:text-xs font-bold block ${
                       isHovered
-                        ? 'text-[#0E7490]'
+                        ? 'text-[#DC2626]'
                         : isDark
-                        ? 'text-[#94A3B8]'
-                        : 'text-[#64748B]'
+                        ? 'text-[#A2A9B5]'
+                        : 'text-[#3C424C]'
                     }`}
                   >
                     {bar.label}
@@ -634,86 +617,88 @@ export const ConsistencyCharts: React.FC<ConsistencyChartsProps> = ({
         </div>
 
         {/* 3. Period Statistics strip */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-6 pt-2">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-6 pt-2 font-stencil uppercase tracking-wider">
           <div>
-            <span className={`text-[11px] uppercase tracking-wider font-semibold block ${isDark ? 'text-[#64748B]' : 'text-[#94A3B8]'}`}>
+            <span className={`text-[11px] font-bold block ${isDark ? 'text-[#68707E]' : 'text-[#666F7D]'}`}>
               {t('analytics.totalInPeriod')}
             </span>
-            <span className="text-lg font-bold font-display mt-0.5 block tabular-nums">
+            <span className="text-2xl font-black mt-0.5 block tabular-nums">
               {formatMinutes(periodStats.totalMinutes)}
             </span>
           </div>
 
           <div>
-            <span className={`text-[11px] uppercase tracking-wider font-semibold block ${isDark ? 'text-[#64748B]' : 'text-[#94A3B8]'}`}>
+            <span className={`text-[11px] font-bold block ${isDark ? 'text-[#68707E]' : 'text-[#666F7D]'}`}>
               {t('analytics.dailyAverage')}
             </span>
-            <span className="text-lg font-bold font-display mt-0.5 block tabular-nums">
+            <span className="text-2xl font-black mt-0.5 block tabular-nums">
               {formatMinutes(periodStats.dailyAverage)}
             </span>
           </div>
 
           <div>
-            <span className={`text-[11px] uppercase tracking-wider font-semibold block ${isDark ? 'text-[#64748B]' : 'text-[#94A3B8]'}`}>
+            <span className={`text-[11px] font-bold block ${isDark ? 'text-[#68707E]' : 'text-[#666F7D]'}`}>
               {t('analytics.topSubject')}
             </span>
-            <span className="text-lg font-bold font-display mt-0.5 block truncate text-[#0E7490]">
+            <span className="text-2xl font-black mt-0.5 block truncate text-[#DC2626]">
               {periodStats.topSubject}
             </span>
           </div>
 
           <div>
-            <span className={`text-[11px] uppercase tracking-wider font-semibold block ${isDark ? 'text-[#64748B]' : 'text-[#94A3B8]'}`}>
+            <span className={`text-[11px] font-bold block ${isDark ? 'text-[#68707E]' : 'text-[#666F7D]'}`}>
               {t('analytics.consistencyRate')}
             </span>
-            <span className="text-lg font-bold font-display mt-0.5 block tabular-nums text-[#4E7A74]">
+            <span className="text-2xl font-black mt-0.5 block tabular-nums text-[#4D7C0F]">
               {periodStats.consistencyRate}%
             </span>
           </div>
         </div>
       </div>
 
-      {/* 4. 52-Week Annual Heatmap (Calendário de Contribuições) */}
+      {/* 4. 52-Week Annual Heatmap (Carimbos de Constância) */}
       <div
-        className={`rounded-3xl p-6 sm:p-8 border transition-all ${
-          isDark ? 'bg-[#181F26] border-[#2A3744]' : 'bg-white border-[#D6E0EA]'
+        className={`border-2 p-6 sm:p-8 relative punk-shadow ${
+          isDark
+            ? 'bg-[#15181D] border-[#2E343D] text-[#F5F2EB]'
+            : 'bg-white border-[#000000] text-[#111317]'
         }`}
       >
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 mb-6">
           <div>
-            <h4 className="text-lg font-bold font-display uppercase tracking-tight">
+            <h4 className="text-xl font-black font-stencil uppercase tracking-wider">
               {t('analytics.heatmapTitle')}
             </h4>
-            <p className={`text-xs mt-0.5 ${isDark ? 'text-[#94A3B8]' : 'text-[#64748B]'}`}>
+            <p className={`text-xs mt-0.5 font-semibold ${isDark ? 'text-[#A2A9B5]' : 'text-[#3C424C]'}`}>
               {t('analytics.heatmapSubtitle')}
             </p>
           </div>
 
-          {/* Color Scale Legend */}
-          <div className="flex items-center gap-1.5 text-xs text-[#8A99AD]">
+          {/* Color Scale Legend in ink stamp squares */}
+          <div className="flex items-center gap-1.5 text-xs font-stencil uppercase tracking-wider">
             <span>{t('analytics.less')}</span>
             <div className="flex items-center gap-1">
-              <span className={`w-3 h-3 rounded-sm ${isDark ? 'bg-[#222C37]' : 'bg-[#E2E8F0]'}`} />
-              <span className="w-3 h-3 rounded-sm bg-[#164E63]" />
-              <span className="w-3 h-3 rounded-sm bg-[#0E7490]" />
-              <span className="w-3 h-3 rounded-sm bg-[#0891B2]" />
-              <span className="w-3 h-3 rounded-sm bg-[#38BDF8]" />
+              <span className={`w-3.5 h-3.5 border border-black ${isDark ? 'bg-[#22272F]' : 'bg-[#E5E0D5]'}`} />
+              <span className="w-3.5 h-3.5 border border-black bg-[#991B1B]" />
+              <span className="w-3.5 h-3.5 border border-black bg-[#DC2626]" />
+              <span className="w-3.5 h-3.5 border border-black bg-[#EF4444]" />
+              <span className="w-3.5 h-3.5 border border-black bg-[#F59E0B]" />
             </div>
             <span>{t('analytics.more')}</span>
           </div>
         </div>
 
-        {/* Heatmap Grid Container (Scrollable horizontally on mobile) */}
+        {/* Heatmap Grid Container */}
         <div className="overflow-x-auto pb-3">
-          <div className="inline-flex gap-1.5 min-w-[720px]">
+          <div className="inline-flex gap-1 min-w-[720px]">
             {heatmapGrid.map((week, wIdx) => (
-              <div key={wIdx} className="flex flex-col gap-1.5">
+              <div key={wIdx} className="flex flex-col gap-1">
                 {week.map((day, dIdx) => {
-                  let bg = isDark ? '#222C37' : '#E2E8F0';
-                  if (day.level === 1) bg = '#164E63';
-                  else if (day.level === 2) bg = '#0E7490';
-                  else if (day.level === 3) bg = '#0891B2';
-                  else if (day.level === 4) bg = '#38BDF8';
+                  let bg = isDark ? '#22272F' : '#E5E0D5';
+                  if (day.level === 1) bg = '#991B1B';
+                  else if (day.level === 2) bg = '#DC2626';
+                  else if (day.level === 3) bg = '#EF4444';
+                  else if (day.level === 4) bg = '#F59E0B';
 
                   return (
                     <div
@@ -729,7 +714,7 @@ export const ConsistencyCharts: React.FC<ConsistencyChartsProps> = ({
                         });
                       }}
                       onMouseLeave={() => setHoveredHeatmapDay(null)}
-                      className="w-3.5 h-3.5 rounded-xs transition-transform hover:scale-125 cursor-pointer"
+                      className="w-3.5 h-3.5 border border-black/80 transition-transform hover:scale-125 cursor-pointer"
                       style={{ backgroundColor: bg }}
                     />
                   );
@@ -742,18 +727,16 @@ export const ConsistencyCharts: React.FC<ConsistencyChartsProps> = ({
         {/* Heatmap Day Tooltip Portal */}
         {hoveredHeatmapDay && (
           <div
-            className={`fixed z-50 px-2.5 py-1.5 rounded-lg text-xs shadow-xl border pointer-events-none transform -translate-x-1/2 -translate-y-full mb-2 ${
-              isDark
-                ? 'bg-[#12161B] text-white border-[#2A3744]'
-                : 'bg-white text-[#0F172A] border-[#CBD5E1]'
+            className={`fixed z-50 px-2.5 py-1.5 border-2 border-black shadow-[3px_3px_0px_#000000] text-xs pointer-events-none transform -translate-x-1/2 -translate-y-full mb-2 ${
+              isDark ? 'bg-[#0B0C0E] text-white' : 'bg-[#F5EBCB] text-black'
             }`}
             style={{ left: hoveredHeatmapDay.x, top: hoveredHeatmapDay.y - 6 }}
           >
-            <div className="font-bold">{formatDate(hoveredHeatmapDay.date)}</div>
-            <div className="text-[11px] opacity-80">
+            <div className="font-stencil font-black uppercase text-sm">{formatDate(hoveredHeatmapDay.date)}</div>
+            <div className="text-[11px] font-sans-body font-semibold">
               {hoveredHeatmapDay.minutes > 0
                 ? `${hoveredHeatmapDay.minutes} min · ${hoveredHeatmapDay.sessionsCount} sessão(ões)`
-                : 'Nenhum estudo registrado neste dia'}
+                : 'Dia sem sessões'}
             </div>
           </div>
         )}

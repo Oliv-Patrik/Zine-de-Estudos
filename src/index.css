@@ -2,29 +2,29 @@
 
 @layer base {
   :root {
-    --font-display: 'Bricolage Grotesque', sans-serif;
-    --font-serif-italic: 'Fraunces', serif;
-    --font-sans: 'Plus Jakarta Sans', sans-serif;
+    --font-stencil: 'Bebas Neue', Impact, sans-serif;
+    --font-marker: 'Permanent Marker', cursive;
+    --font-sans: 'Space Grotesk', sans-serif;
     --font-mono: 'JetBrains Mono', monospace;
   }
 
   body {
     font-family: var(--font-sans);
-    letter-spacing: -0.01em;
+    letter-spacing: -0.015em;
   }
 }
 
-.font-display {
-  font-family: 'Bricolage Grotesque', sans-serif;
+.font-stencil {
+  font-family: 'Bebas Neue', Impact, sans-serif;
+  letter-spacing: 0.04em;
 }
 
-.font-serif-italic {
-  font-family: 'Fraunces', serif;
-  font-style: italic;
+.font-marker {
+  font-family: 'Permanent Marker', cursive;
 }
 
 .font-sans-body {
-  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-family: 'Space Grotesk', sans-serif;
 }
 
 .font-timer-mono {
@@ -32,52 +32,107 @@
   font-variant-numeric: tabular-nums;
 }
 
-/* Subtle risograph paper grain overlay */
-.risograph-texture {
+/* Photocopier grain & halftone dot texture */
+.xerox-texture {
   position: relative;
 }
 
-.risograph-texture::after {
+.xerox-texture::before {
   content: "";
   position: absolute;
   inset: 0;
   pointer-events: none;
-  opacity: 0.035;
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+  opacity: 0.04;
+  background-image: radial-gradient(circle at 1px 1px, #ffffff 1px, transparent 0);
+  background-size: 8px 8px;
   z-index: 1;
 }
 
-/* Stickers subtle tilt and sticker stamp border */
-.sticker-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
-  padding: 0.2rem 0.65rem;
-  border-radius: 9999px;
-  font-size: 0.72rem;
-  font-weight: 700;
-  letter-spacing: 0.02em;
+.xerox-texture::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.05;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.95' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+  z-index: 1;
+}
+
+/* Hard offset drop shadow for DIY punk paper flyers */
+.punk-shadow {
+  box-shadow: 4px 4px 0px #000000;
+}
+
+.punk-shadow-sm {
+  box-shadow: 2px 2px 0px #000000;
+}
+
+.punk-shadow-red {
+  box-shadow: 4px 4px 0px #DC2626;
+}
+
+.punk-btn {
+  box-shadow: 3px 3px 0px #000000;
+  transition: transform 0.08s ease, box-shadow 0.08s ease;
+}
+
+.punk-btn:hover {
+  transform: translate(-1px, -1px);
+  box-shadow: 4px 4px 0px #000000;
+}
+
+.punk-btn:active {
+  transform: translate(2px, 2px);
+  box-shadow: 1px 1px 0px #000000;
+}
+
+/* Masking Tape effect */
+.masking-tape {
+  position: absolute;
+  height: 18px;
+  background-color: rgba(245, 235, 205, 0.78);
+  border-left: 2px dashed rgba(215, 200, 165, 0.6);
+  border-right: 2px dashed rgba(215, 200, 165, 0.6);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+  pointer-events: none;
+  z-index: 15;
+}
+
+/* Ink Stamp effect */
+.punk-stamp {
+  border: 2px solid #DC2626;
+  color: #DC2626;
   text-transform: uppercase;
-  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+  font-family: 'Bebas Neue', sans-serif;
+  letter-spacing: 0.08em;
+  padding: 0.15rem 0.5rem;
+  display: inline-block;
+  transform: rotate(-3deg);
+  mask-image: radial-gradient(circle, black 70%, rgba(0,0,0,0.4) 100%);
 }
 
-.sticker-badge:hover {
-  transform: scale(1.05) rotate(0deg) !important;
-}
-
-/* Custom scrollbar for dark/light cold theme */
+/* Custom punk scrollbar */
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 7px;
+  height: 7px;
 }
 ::-webkit-scrollbar-track {
-  background: transparent;
+  background: #0B0C0E;
 }
 ::-webkit-scrollbar-thumb {
-  background: rgba(148, 163, 184, 0.25);
-  border-radius: 4px;
+  background: #DC2626;
+  border-radius: 0px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(148, 163, 184, 0.4);
+  background: #EF4444;
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  *, ::before, ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

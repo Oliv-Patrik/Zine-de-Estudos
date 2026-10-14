@@ -11,9 +11,11 @@ import {
   AlertCircle,
   LogOut,
   Info,
+  Zap,
 } from 'lucide-react';
 import { AppLanguage, AppTheme, SyncStatus, GoogleUserProfile } from '../types';
 import { useI18n } from '../i18n';
+import { MaskingTapeStrip } from './illustrations/PunkStickers';
 
 interface HeaderProps {
   language: AppLanguage;
@@ -50,15 +52,15 @@ export const Header: React.FC<HeaderProps> = ({
   const getSyncIcon = () => {
     switch (syncStatus) {
       case 'syncing':
-        return <RefreshCw size={12} className="animate-spin text-[#38BDF8]" />;
+        return <RefreshCw size={12} className="animate-spin text-[#EF4444]" />;
       case 'synced':
-        return <Check size={12} className="text-[#34D399]" />;
+        return <Check size={12} className="text-[#22C55E]" />;
       case 'error':
-        return <AlertCircle size={12} className="text-red-400" />;
+        return <AlertCircle size={12} className="text-[#DC2626]" />;
       case 'offline':
-        return <CloudOff size={12} className="text-[#94A3B8]" />;
+        return <CloudOff size={12} className="text-[#717885]" />;
       default:
-        return <Cloud size={12} className="text-[#94A3B8]" />;
+        return <Cloud size={12} className="text-[#717885]" />;
     }
   };
 
@@ -79,45 +81,52 @@ export const Header: React.FC<HeaderProps> = ({
 
   return (
     <header
-      className={`sticky top-0 z-40 w-full border-b backdrop-blur-md transition-colors ${
+      className={`sticky top-0 z-40 w-full border-b-2 transition-colors ${
         isDark
-          ? 'bg-[#121518]/90 border-[#222A33] text-[#F4F6F8]'
-          : 'bg-[#F4F6F8]/90 border-[#D5DFE8] text-[#121518]'
+          ? 'bg-[#0B0C0E]/95 border-[#2E343D] text-[#F5F2EB]'
+          : 'bg-[#F3EFE6]/95 border-[#000000] text-[#111317]'
       }`}
     >
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-4 md:gap-8">
-        {/* Zone 1: Single text element wordmark */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-4 md:gap-8 relative">
+        {/* Decorative Tape on Header edge */}
+        <div className="absolute -top-1 left-48 hidden lg:block">
+          <MaskingTapeStrip width="w-20" rotation={-2} />
+        </div>
+
+        {/* Zone 1: Single text element wordmark with stencil attitude */}
         <a
           href="#"
-          className="text-lg sm:text-xl font-black tracking-tight font-display uppercase whitespace-nowrap shrink-0 flex items-center gap-2 group"
+          className="text-xl sm:text-2xl font-black tracking-wider font-stencil uppercase whitespace-nowrap shrink-0 flex items-center gap-2 group"
         >
-          <span className="w-2.5 h-2.5 rounded-full bg-[#0E7490] group-hover:scale-125 transition-transform" />
-          <span>{t('app.title')}</span>
+          <div className="w-7 h-7 rounded-sm bg-[#DC2626] text-white flex items-center justify-center border-2 border-black shadow-[2px_2px_0px_#000000] group-hover:rotate-6 transition-transform">
+            <Zap size={16} fill="currentColor" />
+          </div>
+          <span className="group-hover:text-[#DC2626] transition-colors">{t('app.title')}</span>
         </a>
 
         {/* Zone 2: Clean single-line text navigation links */}
-        <nav className="hidden lg:flex items-center gap-6 text-xs font-semibold uppercase tracking-wider font-display opacity-80">
+        <nav className="hidden lg:flex items-center gap-6 text-sm font-bold uppercase tracking-wider font-stencil opacity-85">
           <a
             href="#pomodoro"
-            className="hover:opacity-100 hover:text-[#0E7490] transition-colors whitespace-nowrap shrink-0"
+            className="hover:opacity-100 hover:text-[#DC2626] transition-colors whitespace-nowrap shrink-0"
           >
             {t('nav.pomodoro')}
           </a>
           <a
             href="#metas"
-            className="hover:opacity-100 hover:text-[#0E7490] transition-colors whitespace-nowrap shrink-0"
+            className="hover:opacity-100 hover:text-[#DC2626] transition-colors whitespace-nowrap shrink-0"
           >
             {t('nav.goals')}
           </a>
           <a
             href="#constancia"
-            className="hover:opacity-100 hover:text-[#0E7490] transition-colors whitespace-nowrap shrink-0"
+            className="hover:opacity-100 hover:text-[#DC2626] transition-colors whitespace-nowrap shrink-0"
           >
             {t('nav.analytics')}
           </a>
           <a
             href="#sessoes"
-            className="hover:opacity-100 hover:text-[#0E7490] transition-colors whitespace-nowrap shrink-0"
+            className="hover:opacity-100 hover:text-[#DC2626] transition-colors whitespace-nowrap shrink-0"
           >
             {t('nav.history')}
           </a>
@@ -129,10 +138,10 @@ export const Header: React.FC<HeaderProps> = ({
           {userProfile ? (
             /* Logged In User Pill with Sync Status & Logout */
             <div
-              className={`flex items-center gap-1.5 p-1 sm:pr-2.5 rounded-full border text-xs font-medium transition-colors ${
+              className={`flex items-center gap-1.5 p-1 sm:pr-2.5 border-2 text-xs font-bold font-stencil transition-colors ${
                 isDark
-                  ? 'bg-[#1A2026] border-[#2C3642] text-[#F4F6F8]'
-                  : 'bg-white border-[#D5DFE8] text-[#121518]'
+                  ? 'bg-[#15181D] border-[#2E343D] text-[#F5F2EB] shadow-[2px_2px_0px_#000000]'
+                  : 'bg-white border-[#000000] text-[#111317] shadow-[2px_2px_0px_#000000]'
               }`}
             >
               {/* User Avatar */}
@@ -141,16 +150,16 @@ export const Header: React.FC<HeaderProps> = ({
                   src={userProfile.picture}
                   alt={userProfile.name}
                   referrerPolicy="no-referrer"
-                  className="w-6 h-6 rounded-full object-cover shrink-0"
+                  className="w-6 h-6 border border-black object-cover shrink-0"
                 />
               ) : (
-                <div className="w-6 h-6 rounded-full bg-[#0E7490] text-white flex items-center justify-center text-[10px] font-bold shrink-0">
+                <div className="w-6 h-6 bg-[#DC2626] text-white flex items-center justify-center text-[11px] font-black shrink-0 border border-black">
                   {userProfile.name ? userProfile.name.charAt(0).toUpperCase() : 'U'}
                 </div>
               )}
 
               {/* User First Name */}
-              <span className="hidden sm:inline text-xs font-semibold max-w-[85px] truncate">
+              <span className="hidden sm:inline text-xs tracking-wider max-w-[85px] truncate">
                 {userProfile.name.split(' ')[0]}
               </span>
 
@@ -158,10 +167,10 @@ export const Header: React.FC<HeaderProps> = ({
               <button
                 onClick={onTriggerSync}
                 title={getSyncLabel()}
-                className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium transition-colors ${
+                className={`flex items-center gap-1 px-2 py-0.5 border text-[11px] tracking-wide transition-colors ${
                   isDark
-                    ? 'bg-[#121518] hover:bg-[#222A33] text-[#94A3B8]'
-                    : 'bg-[#F1F5F9] hover:bg-[#E2E8F0] text-[#475569]'
+                    ? 'bg-[#0B0C0E] border-[#2E343D] hover:border-[#DC2626] text-[#A2A9B5]'
+                    : 'bg-[#F3EFE6] border-[#000000] hover:border-[#DC2626] text-[#3C424C]'
                 }`}
               >
                 {getSyncIcon()}
@@ -172,19 +181,19 @@ export const Header: React.FC<HeaderProps> = ({
               <button
                 onClick={onSignOutGoogle}
                 title={t('sync.signOut')}
-                className="p-1 rounded-full text-[#94A3B8] hover:text-red-400 hover:bg-red-500/10 transition-colors shrink-0"
+                className="p-1 text-[#A2A9B5] hover:text-[#DC2626] transition-colors shrink-0"
               >
                 <LogOut size={13} />
               </button>
             </div>
           ) : isClientIdConfigured ? (
-            /* "Entrar com Google" Button */
+            /* "Entrar com Google" Button with Punk Stamp Style */
             <button
               onClick={onSignInGoogle}
-              className={`flex items-center gap-2 px-3 py-1.5 rounded-xl border text-xs font-bold font-display tracking-tight transition-all shadow-xs ${
+              className={`flex items-center gap-2 px-3 py-1.5 border-2 text-xs font-bold font-stencil tracking-wider transition-all punk-btn ${
                 isDark
-                  ? 'bg-[#1A2026] hover:bg-[#222A33] text-[#F4F6F8] border-[#2C3642]'
-                  : 'bg-white hover:bg-slate-50 text-[#121518] border-[#D5DFE8]'
+                  ? 'bg-[#15181D] text-[#F5F2EB] border-[#000000]'
+                  : 'bg-white text-[#111317] border-[#000000]'
               }`}
             >
               {/* Google G Logo SVG */}
@@ -211,14 +220,14 @@ export const Header: React.FC<HeaderProps> = ({
           ) : (
             /* Client ID not configured -> Discreet Warning & Local Mode */
             <div
-              className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium border select-none ${
+              className={`flex items-center gap-1.5 px-2.5 py-1 border text-[11px] font-semibold select-none ${
                 isDark
-                  ? 'bg-[#1A2026] border-[#2C3642] text-[#94A3B8]'
-                  : 'bg-white border-[#D5DFE8] text-[#64748B]'
+                  ? 'bg-[#15181D] border-[#2E343D] text-[#A2A9B5]'
+                  : 'bg-white border-[#000000] text-[#3C424C]'
               }`}
               title={t('sync.syncUnavailable')}
             >
-              <Info size={12} className="text-[#0E7490]" />
+              <Info size={12} className="text-[#DC2626]" />
               <span className="hidden sm:inline">{t('sync.localMode')}</span>
               <span className="sm:hidden text-[10px]">Local</span>
             </div>
@@ -227,36 +236,36 @@ export const Header: React.FC<HeaderProps> = ({
           {/* Language Switcher */}
           <button
             onClick={onToggleLanguage}
-            className={`px-2 py-1 rounded-lg text-xs font-bold font-display border transition-colors ${
+            className={`px-2.5 py-1 text-xs font-bold font-stencil tracking-wider border-2 transition-all punk-btn ${
               isDark
-                ? 'bg-[#1A2026] border-[#2C3642] text-[#94A3B8] hover:text-white'
-                : 'bg-white border-[#D5DFE8] text-[#475569] hover:text-[#121518]'
+                ? 'bg-[#15181D] border-[#000000] text-[#A2A9B5] hover:text-white'
+                : 'bg-white border-[#000000] text-[#3C424C] hover:text-[#111317]'
             }`}
             title="Alterar idioma / Switch language"
           >
             {language === 'pt-BR' ? 'EN' : 'PT'}
           </button>
 
-          {/* Theme Switcher */}
+          {/* Theme Switcher: Dark vs Papel Xerox */}
           <button
             onClick={onToggleTheme}
-            className={`p-2 rounded-lg border transition-colors ${
+            className={`p-2 border-2 transition-all punk-btn ${
               isDark
-                ? 'bg-[#1A2026] border-[#2C3642] text-[#94A3B8] hover:text-white'
-                : 'bg-white border-[#D5DFE8] text-[#475569] hover:text-[#121518]'
+                ? 'bg-[#15181D] border-[#000000] text-[#A2A9B5] hover:text-white'
+                : 'bg-white border-[#000000] text-[#3C424C] hover:text-[#111317]'
             }`}
-            title="Alternar tema"
+            title={isDark ? 'Mudar para modo Papel Xerox' : 'Mudar para modo Preto-Tinta'}
           >
             {isDark ? <Sun size={15} /> : <Moon size={15} />}
           </button>
 
-          {/* Settings Modal Trigger */}
+          {/* Settings Trigger */}
           <button
             onClick={onOpenSettings}
-            className={`p-2 rounded-lg border transition-colors ${
+            className={`p-2 border-2 transition-all punk-btn ${
               isDark
-                ? 'bg-[#1A2026] border-[#2C3642] text-[#94A3B8] hover:text-white'
-                : 'bg-white border-[#D5DFE8] text-[#475569] hover:text-[#121518]'
+                ? 'bg-[#15181D] border-[#000000] text-[#A2A9B5] hover:text-white'
+                : 'bg-white border-[#000000] text-[#3C424C] hover:text-[#111317]'
             }`}
             title={t('nav.settings')}
           >
@@ -266,11 +275,11 @@ export const Header: React.FC<HeaderProps> = ({
           {/* Primary Action Button */}
           <button
             onClick={onOpenNewSession}
-            className="px-3.5 py-1.5 rounded-xl bg-[#0E7490] text-white text-xs font-bold font-display hover:bg-[#0891B2] transition-colors whitespace-nowrap shrink-0 flex items-center gap-1.5 shadow-sm"
+            className="px-4 py-1.5 bg-[#DC2626] text-white text-xs font-bold font-stencil tracking-wider uppercase border-2 border-black punk-btn whitespace-nowrap shrink-0 flex items-center gap-1.5"
           >
-            <Plus size={14} />
+            <Plus size={15} strokeWidth={3} />
             <span className="hidden sm:inline">{t('sessions.quickLog')}</span>
-            <span className="sm:hidden">Novo</span>
+            <span className="sm:hidden">Sessão</span>
           </button>
         </div>
       </div>

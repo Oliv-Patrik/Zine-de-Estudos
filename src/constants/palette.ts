@@ -1,52 +1,43 @@
-export const COLD_PALETTE = {
-  // Canvas & surface neutrals
+export const PUNK_PALETTE = {
+  // Canvas & surfaces
   dark: {
-    bg: '#121518', // Grafite profundo
-    surface: '#1A2026', // Cinza-ardósia suave
-    surfaceSubtle: '#222A33',
-    border: '#2C3642',
-    borderSubtle: '#384656',
-    textPrimary: '#F4F6F8', // Branco-gelo
-    textSecondary: '#94A3B8', // Cinza azulado claro
-    textMuted: '#64748B',
+    bg: '#0B0C0E', // Preto-tinta
+    surface: '#15181D', // Grafite colagem
+    surfaceSubtle: '#1F242C',
+    border: '#333A44',
+    borderHard: '#000000',
+    textPrimary: '#F5F2EB', // Off-white xerox
+    textSecondary: '#A2A9B5',
+    textMuted: '#68707E',
   },
   light: {
-    bg: '#F4F6F8', // Branco-gelo
+    bg: '#F3EFE6', // Papel xerox amarelado
     surface: '#FFFFFF',
-    surfaceSubtle: '#EAEFF4',
-    border: '#D5DFE8',
-    borderSubtle: '#C2D0DC',
-    textPrimary: '#121518',
-    textSecondary: '#475569',
-    textMuted: '#64748B',
+    surfaceSubtle: '#EAE4D6',
+    border: '#111317', // Tinta preta pura
+    borderHard: '#000000',
+    textPrimary: '#111317', // Tinta preta fotocópia
+    textSecondary: '#3C424C',
+    textMuted: '#666F7D',
   },
-  // Breath of contrast section (light breathing block in dark mode or inverted in light mode)
-  contrastBlock: {
-    bg: '#EBF0F5',
-    text: '#121518',
-    subtext: '#475569',
-    border: '#CBD5E1',
-    card: '#FFFFFF',
-  },
-  // Accent color (petróleo frio)
+  // Main punch accent: Vermelho-tinta
   accent: {
-    base: '#0E7490', // Cyan-700 / Petróleo
-    hover: '#0891B2', // Cyan-600
-    subtle: '#164E63',
-    light: '#E0F2FE',
+    base: '#DC2626', // Vermelho-tinta silk-screen
+    hover: '#B91C1C',
+    bright: '#EF4444',
+    tape: 'rgba(245, 235, 205, 0.78)',
   },
-  // Cold, desaturated harmonic discipline palette
+  // Muted screenprint discipline colors (alto contraste entre si, sem neon)
   subjectColors: [
-    { name: 'Azul Ardósia', hex: '#4A7A96' },
-    { name: 'Cinza Azulado', hex: '#5F738A' },
-    { name: 'Sálvia Apagada', hex: '#4E7A74' },
-    { name: 'Lavanda Fria', hex: '#6B6D8F' },
-    { name: 'Índigo Frio', hex: '#465682' },
-    { name: 'Chumbo Frio', hex: '#526071' },
-    { name: 'Cerúleo Suave', hex: '#3B799E' },
-    { name: 'Menta Fria', hex: '#4B7A6E' },
-    { name: 'Gelo Petróleo', hex: '#336B73' },
-    { name: 'Cinza Tempestade', hex: '#626B73' },
+    { name: 'Vermelho Cartaz', hex: '#DC2626' },
+    { name: 'Azul-Aço', hex: '#2563EB' },
+    { name: 'Mostarda Impressa', hex: '#D97706' },
+    { name: 'Verde-Oliva', hex: '#4D7C0F' },
+    { name: 'Ciano-Sujo', hex: '#0E7490' },
+    { name: 'Magenta Zine', hex: '#BE185D' },
+    { name: 'Ferrugem', hex: '#C2410C' },
+    { name: 'Roxo Stencil', hex: '#6D28D9' },
+    { name: 'Chumbo Prensa', hex: '#475569' },
   ],
 };
 
@@ -54,31 +45,31 @@ export const DEFAULT_SUBJECTS = [
   {
     id: 'subj-1',
     name: 'Engenharia de Software',
-    color: '#4A7A96',
+    color: '#DC2626', // Vermelho-tinta
     createdAt: Date.now() - 30 * 86400000,
   },
   {
     id: 'subj-2',
     name: 'Estruturas de Dados',
-    color: '#4E7A74',
+    color: '#2563EB', // Azul-aço
     createdAt: Date.now() - 30 * 86400000,
   },
   {
     id: 'subj-3',
     name: 'Sistemas Distribuídos',
-    color: '#6B6D8F',
+    color: '#D97706', // Mostarda
     createdAt: Date.now() - 25 * 86400000,
   },
   {
     id: 'subj-4',
-    name: 'Design de Interfaces',
-    color: '#3B799E',
+    name: 'Design Gráfico & UI',
+    color: '#0E7490', // Ciano-sujo
     createdAt: Date.now() - 20 * 86400000,
   },
   {
     id: 'subj-5',
-    name: 'Matemática Discreta',
-    color: '#5F738A',
+    name: 'Teoria da Computação',
+    color: '#4D7C0F', // Verde-oliva
     createdAt: Date.now() - 15 * 86400000,
   },
 ];
