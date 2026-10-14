@@ -66,3 +66,15 @@ Se você é desenvolvedor e deseja rodar o projeto na sua máquina para estudar 
 1. Clone o repositório:
 ```bash
 git clone [https://github.com/SEU_USUARIO/zine-de-estudos.git](https://github.com/SEU_USUARIO/zine-de-estudos.git)
+```
+
+2. Acesse a pasta do projeto:
+```bash
+cd zine-de-estudos
+````
+
+3. Instale as dependências e inicie o servidor:  
+```bash
+npm install
+npm run dev
+```
