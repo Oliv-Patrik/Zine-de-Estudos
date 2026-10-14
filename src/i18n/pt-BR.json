@@ -138,12 +138,15 @@
   },
   "sync": {
     "localMode": "Modo Local (Offline)",
-    "synced": "Sincronizado com Google Drive",
+    "synced": "Sincronizado",
     "syncing": "Sincronizando...",
     "error": "Erro ao sincronizar",
-    "offline": "Sem conexão com a internet",
+    "offline": "Offline",
     "connectDrive": "Conectar Google Drive",
     "disconnectDrive": "Desconectar",
+    "signInGoogle": "Entrar com Google",
+    "signOut": "Sair",
+    "syncUnavailable": "Sincronização indisponível: Client ID não configurado",
     "lastSync": "Última sincronização às {time}"
   },
   "settings": {

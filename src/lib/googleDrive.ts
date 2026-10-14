@@ -1,4 +1,4 @@
-import { AppStateData } from '../types';
+import { AppStateData, GoogleUserProfile } from '../types';
 
 declare global {
   interface Window {
@@ -12,6 +12,7 @@ declare global {
           }) => {
             requestAccessToken: (overrideConfig?: { prompt?: string }) => void;
           };
+          revoke: (token: string, done?: () => void) => void;
         };
       };
     };
@@ -19,7 +20,7 @@ declare global {
 }
 
 const DRIVE_FILE_NAME = 'study_caderno_state.json';
-const SCOPES = 'https://www.googleapis.com/auth/drive.appdata https://www.googleapis.com/auth/drive.file';
+const SCOPES = 'https://www.googleapis.com/auth/drive.appdata email profile';
 
 let memoryAccessToken: string | null = null;
 let tokenClient: any = null;
@@ -37,12 +38,13 @@ export function isGisAvailable(): boolean {
 }
 
 /**
- * Initializes the GIS token client and triggers authorization popup.
+ * Initializes the GIS token client and triggers authorization popup or silent renewal.
  */
 export function requestGoogleAccessToken(
   clientId: string,
   onSuccess: (token: string) => void,
-  onError: (err: any) => void
+  onError: (err: any) => void,
+  silent = false
 ): void {
   if (!isGisAvailable()) {
     onError(new Error('Google Identity Services script not ready yet. Please try again in a few seconds.'));
@@ -67,10 +69,45 @@ export function requestGoogleAccessToken(
       },
     });
 
-    tokenClient.requestAccessToken({ prompt: '' });
+    tokenClient.requestAccessToken({ prompt: silent ? '' : 'select_account' });
   } catch (err) {
     onError(err);
   }
+}
+
+/**
+ * Fetches user profile (name, picture, email) using the access token.
+ */
+export async function fetchUserProfile(token: string): Promise<GoogleUserProfile | null> {
+  try {
+    const res = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!res.ok) return null;
+    const data = await res.json();
+    return {
+      name: data.name || data.given_name || 'Usuário',
+      email: data.email || '',
+      picture: data.picture,
+    };
+  } catch (err) {
+    console.warn('Error fetching user profile:', err);
+    return null;
+  }
+}
+
+/**
+ * Revokes Google access token and cleans up session.
+ */
+export function signOutGoogle(token: string | null): void {
+  if (token && window.google?.accounts?.oauth2?.revoke) {
+    try {
+      window.google.accounts.oauth2.revoke(token, () => {});
+    } catch (e) {
+      console.warn('Token revoke warning:', e);
+    }
+  }
+  memoryAccessToken = null;
 }
 
 /**

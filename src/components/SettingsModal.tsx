@@ -1,15 +1,12 @@
-import React, { useState, useRef } from 'react';
+import React, { useRef } from 'react';
 import {
   X,
   Volume2,
   Clock,
-  Cloud,
   Download,
   Upload,
   RefreshCw,
   Trash2,
-  ExternalLink,
-  CheckCircle2,
 } from 'lucide-react';
 import { PomodoroSettings, AppStateData } from '../types';
 import { useI18n } from '../i18n';
@@ -20,8 +17,6 @@ interface SettingsModalProps {
   onClose: () => void;
   settings: PomodoroSettings;
   onUpdateSettings: (settings: PomodoroSettings) => void;
-  googleClientId?: string;
-  onUpdateGoogleClientId: (clientId: string) => void;
   onExportJson: () => void;
   onImportJson: (data: AppStateData) => void;
   onLoadDemoData: () => void;
@@ -34,8 +29,6 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   onClose,
   settings,
   onUpdateSettings,
-  googleClientId = '',
-  onUpdateGoogleClientId,
   onExportJson,
   onImportJson,
   onLoadDemoData,
@@ -44,19 +37,9 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 }) => {
   const { t } = useI18n();
   const isDark = theme === 'dark';
-
-  const [tempClientId, setTempClientId] = useState(googleClientId);
-  const [clientIdSaved, setClientIdSaved] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   if (!isOpen) return null;
-
-  const handleSaveClientId = (e: React.FormEvent) => {
-    e.preventDefault();
-    onUpdateGoogleClientId(tempClientId.trim());
-    setClientIdSaved(true);
-    setTimeout(() => setClientIdSaved(false), 3000);
-  };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -82,7 +65,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in">
       <div
-        className={`w-full max-w-2xl rounded-3xl p-6 sm:p-8 border shadow-2xl relative max-h-[90vh] overflow-y-auto ${
+        className={`w-full max-w-xl rounded-3xl p-6 sm:p-8 border shadow-2xl relative max-h-[90vh] overflow-y-auto ${
           isDark
             ? 'bg-[#181F26] text-[#F4F6F8] border-[#2A3744]'
             : 'bg-white text-[#0F172A] border-[#D6E0EA]'
@@ -210,54 +193,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             </div>
           </div>
 
-          {/* Section 2: Google Drive OAuth Configuration */}
-          <div className="p-5 rounded-2xl border border-[#2A3744]/60">
-            <h4 className="text-xs font-bold uppercase tracking-wider font-display text-[#0E7490] flex items-center gap-1.5 mb-1.5">
-              <Cloud size={15} />
-              {t('settings.googleDriveSection')}
-            </h4>
-            <p className="text-xs opacity-75 mb-3 leading-relaxed">
-              {t('settings.googleClientIdHelp')}
-            </p>
-
-            <form onSubmit={handleSaveClientId} className="flex flex-col sm:flex-row gap-2">
-              <input
-                type="text"
-                value={tempClientId}
-                onChange={(e) => setTempClientId(e.target.value)}
-                placeholder="Ex.: 123456789-xxxx.apps.googleusercontent.com"
-                className={`flex-1 text-xs rounded-xl px-3.5 py-2.5 border font-mono ${
-                  isDark ? 'bg-[#12161B] border-[#2A3744]' : 'bg-[#F8FAFC] border-[#CBD5E1]'
-                }`}
-              />
-              <button
-                type="submit"
-                className="px-4 py-2.5 rounded-xl bg-[#0E7490] text-white text-xs font-bold hover:bg-[#0891B2] flex items-center justify-center gap-1.5 shrink-0"
-              >
-                {clientIdSaved ? <CheckCircle2 size={14} /> : null}
-                <span>{t('settings.saveClientId')}</span>
-              </button>
-            </form>
-
-            {/* Cloud Console Setup Instructions Collapsible / Box */}
-            <div
-              className={`mt-4 p-4 rounded-xl text-xs flex flex-col gap-2 ${
-                isDark ? 'bg-[#12161B]/70 text-[#94A3B8]' : 'bg-[#F1F5F9] text-[#475569]'
-              }`}
-            >
-              <span className="font-bold uppercase tracking-wider font-display text-[#F4F6F8] dark:text-[#F4F6F8] text-[#0F172A]">
-                {t('settings.cloudSetupGuide')}:
-              </span>
-              <p>{t('settings.cloudStep1')}</p>
-              <p>{t('settings.cloudStep2')}</p>
-              <p>{t('settings.cloudStep3')}</p>
-              <p>{t('settings.cloudStep4')}</p>
-              <p>{t('settings.cloudStep5')}</p>
-              <p>{t('settings.cloudStep6')}</p>
-            </div>
-          </div>
-
-          {/* Section 3: Backup & Data Management */}
+          {/* Section 2: Backup & Data Management */}
           <div className="p-5 rounded-2xl border border-[#2A3744]/60">
             <h4 className="text-xs font-bold uppercase tracking-wider font-display text-[#0E7490] mb-3">
               {t('settings.backupSection')}

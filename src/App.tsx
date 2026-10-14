@@ -1,7 +1,24 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { AppStateData, StudySession, Subject, GoalTask, PomodoroSettings, SyncStatus, AppLanguage, AppTheme } from './types';
+import {
+  AppStateData,
+  StudySession,
+  Subject,
+  GoalTask,
+  PomodoroSettings,
+  SyncStatus,
+  AppLanguage,
+  AppTheme,
+  GoogleUserProfile,
+} from './types';
 import { loadLocalState, saveLocalState, generateSeedData, clearAllLocalData, getTodayDateString } from './lib/storage';
-import { requestGoogleAccessToken, fetchFromDrive, uploadToDrive, getCachedToken } from './lib/googleDrive';
+import {
+  requestGoogleAccessToken,
+  fetchUserProfile,
+  signOutGoogle,
+  fetchFromDrive,
+  uploadToDrive,
+  getCachedToken,
+} from './lib/googleDrive';
 import { I18nProvider } from './i18n';
 import { Header } from './components/Header';
 import { HeroSection } from './components/HeroSection';
@@ -16,9 +33,14 @@ import { SettingsModal } from './components/SettingsModal';
 import { MobileBottomNav } from './components/MobileBottomNav';
 import { Footer } from './components/Footer';
 
+const GOOGLE_CLIENT_ID = (import.meta as any).env?.VITE_GOOGLE_CLIENT_ID || '';
+const STORAGE_LOGGED_IN_KEY = 'caderno_user_logged_in';
+
 export default function App() {
   const [appState, setAppState] = useState<AppStateData>(() => loadLocalState());
   const [syncStatus, setSyncStatus] = useState<SyncStatus>('local');
+  const [userProfile, setUserProfile] = useState<GoogleUserProfile | null>(null);
+
   const [isFocusModeOpen, setIsFocusModeOpen] = useState(false);
   const [isSessionModalOpen, setIsSessionModalOpen] = useState(false);
   const [editingSession, setEditingSession] = useState<StudySession | null>(null);
@@ -30,7 +52,7 @@ export default function App() {
     return appState.subjects[0]?.id || '';
   });
 
-  // Sync state changes to localStorage
+  // Sync state changes to localStorage and Drive (if authenticated)
   const updateState = useCallback((updater: (prev: AppStateData) => AppStateData) => {
     setAppState((prev) => {
       const next = updater(prev);
@@ -79,6 +101,130 @@ export default function App() {
     };
   }, []);
 
+  // Sync helper with Google Drive
+  const syncWithDrive = useCallback(async (token: string, currentState: AppStateData) => {
+    try {
+      setSyncStatus('syncing');
+      const remoteData = await fetchFromDrive(token);
+      if (remoteData) {
+        // Conflict resolution: compare lastModified
+        if (remoteData.lastModified > currentState.lastModified) {
+          setAppState(remoteData);
+          saveLocalState(remoteData);
+        } else {
+          // Local is newer or equal, push local
+          await uploadToDrive(token, currentState);
+        }
+      } else {
+        // First time cloud sync, create initial file in Drive
+        await uploadToDrive(token, currentState);
+      }
+      setSyncStatus('synced');
+    } catch (err) {
+      console.error('Drive sync error:', err);
+      setSyncStatus('error');
+    }
+  }, []);
+
+  // Check login on startup & auto-sync if previously authenticated
+  useEffect(() => {
+    if (!GOOGLE_CLIENT_ID) return;
+
+    const wasLoggedIn = localStorage.getItem(STORAGE_LOGGED_IN_KEY) === 'true';
+    if (!wasLoggedIn) return;
+
+    // Give GIS script a brief moment to initialize
+    const initTimer = setTimeout(() => {
+      requestGoogleAccessToken(
+        GOOGLE_CLIENT_ID,
+        async (token) => {
+          try {
+            const profile = await fetchUserProfile(token);
+            if (profile) {
+              setUserProfile(profile);
+            }
+            await syncWithDrive(token, appState);
+          } catch (err) {
+            console.warn('Auto-sync on load note:', err);
+          }
+        },
+        (err) => {
+          console.warn('Silent auto-auth on load error:', err);
+          // Don't disturb the user; stay in local mode
+          setSyncStatus('local');
+        },
+        true // silent request
+      );
+    }, 500);
+
+    return () => clearTimeout(initTimer);
+  }, []); // Run on startup
+
+  // Silent token renewal interval while session is active (every 45 minutes)
+  useEffect(() => {
+    if (!GOOGLE_CLIENT_ID || !userProfile) return;
+
+    const interval = setInterval(() => {
+      requestGoogleAccessToken(
+        GOOGLE_CLIENT_ID,
+        async (token) => {
+          const profile = await fetchUserProfile(token);
+          if (profile) setUserProfile(profile);
+          await syncWithDrive(token, appState);
+        },
+        (err) => console.warn('Background token renewal error:', err),
+        true // silent
+      );
+    }, 45 * 60 * 1000);
+
+    return () => clearInterval(interval);
+  }, [userProfile, appState, syncWithDrive]);
+
+  // Google Sign In trigger (from button click)
+  const handleSignInGoogle = () => {
+    if (!GOOGLE_CLIENT_ID) return;
+
+    setSyncStatus('syncing');
+    requestGoogleAccessToken(
+      GOOGLE_CLIENT_ID,
+      async (token) => {
+        try {
+          const profile = await fetchUserProfile(token);
+          setUserProfile(profile || { name: 'Conta Google', email: '' });
+          localStorage.setItem(STORAGE_LOGGED_IN_KEY, 'true');
+          await syncWithDrive(token, appState);
+        } catch (err) {
+          console.error('Google Sign In callback error:', err);
+          setSyncStatus('error');
+        }
+      },
+      (err) => {
+        console.error('Google Auth error:', err);
+        setSyncStatus('error');
+      },
+      false
+    );
+  };
+
+  // Google Sign Out trigger
+  const handleSignOutGoogle = () => {
+    const token = getCachedToken();
+    signOutGoogle(token);
+    setUserProfile(null);
+    localStorage.removeItem(STORAGE_LOGGED_IN_KEY);
+    setSyncStatus('local');
+  };
+
+  // Manual Trigger Sync from Header Badge
+  const handleTriggerSync = () => {
+    const token = getCachedToken();
+    if (token) {
+      syncWithDrive(token, appState);
+    } else if (GOOGLE_CLIENT_ID) {
+      handleSignInGoogle();
+    }
+  };
+
   // Calculate today's studied minutes
   const todayDateStr = getTodayDateString();
   const todayStudiedMinutes = useMemo(() => {
@@ -118,47 +264,6 @@ export default function App() {
     }
     return streak;
   }, [appState.sessions]);
-
-  // Trigger Google Drive sync
-  const handleTriggerSync = () => {
-    const clientId = appState.googleClientId || (import.meta as any).env?.VITE_GOOGLE_CLIENT_ID;
-
-    if (!clientId) {
-      setIsSettingsModalOpen(true);
-      return;
-    }
-
-    setSyncStatus('syncing');
-    requestGoogleAccessToken(
-      clientId,
-      async (token) => {
-        try {
-          const remoteData = await fetchFromDrive(token);
-          if (remoteData) {
-            // Conflict resolution: compare lastModified
-            if (remoteData.lastModified > appState.lastModified) {
-              setAppState(remoteData);
-              saveLocalState(remoteData);
-            } else {
-              // Local is newer or equal, push local
-              await uploadToDrive(token, appState);
-            }
-          } else {
-            // First time cloud sync, create initial file in Drive
-            await uploadToDrive(token, appState);
-          }
-          setSyncStatus('synced');
-        } catch (err) {
-          console.error('Sync error:', err);
-          setSyncStatus('error');
-        }
-      },
-      (err) => {
-        console.error('Google Auth error:', err);
-        setSyncStatus('error');
-      }
-    );
-  };
 
   // Session handlers
   const handleSaveSession = (
@@ -264,13 +369,6 @@ export default function App() {
     }));
   };
 
-  const handleUpdateGoogleClientId = (clientId: string) => {
-    updateState((prev) => ({
-      ...prev,
-      googleClientId: clientId,
-    }));
-  };
-
   const handleExportJson = () => {
     const content = JSON.stringify(appState, null, 2);
     const blob = new Blob([content], { type: 'application/json' });
@@ -332,6 +430,10 @@ export default function App() {
             setEditingSession(null);
             setIsSessionModalOpen(true);
           }}
+          userProfile={userProfile}
+          isClientIdConfigured={!!GOOGLE_CLIENT_ID}
+          onSignInGoogle={handleSignInGoogle}
+          onSignOutGoogle={handleSignOutGoogle}
         />
 
         {/* Main Content Area */}
@@ -451,8 +553,6 @@ export default function App() {
           onClose={() => setIsSettingsModalOpen(false)}
           settings={appState.pomodoroSettings}
           onUpdateSettings={handleUpdateSettings}
-          googleClientId={appState.googleClientId}
-          onUpdateGoogleClientId={handleUpdateGoogleClientId}
           onExportJson={handleExportJson}
           onImportJson={handleImportJson}
           onLoadDemoData={handleLoadDemoData}

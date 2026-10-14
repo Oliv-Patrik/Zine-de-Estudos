@@ -57,6 +57,12 @@ export type SyncStatus = 'synced' | 'syncing' | 'error' | 'local' | 'offline';
 export type AppLanguage = 'pt-BR' | 'en';
 export type AppTheme = 'dark' | 'light';
 
+export interface GoogleUserProfile {
+  name: string;
+  email: string;
+  picture?: string;
+}
+
 export interface AppStateData {
   version: number;
   lastModified: number;
@@ -68,5 +74,5 @@ export interface AppStateData {
   pomodoroState?: Partial<PomodoroState>;
   language: AppLanguage;
   theme: AppTheme;
-  googleClientId?: string;
 }
+
