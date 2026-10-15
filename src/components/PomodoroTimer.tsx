@@ -23,6 +23,7 @@ interface PomodoroTimerProps {
   selectedSubjectId: string;
   onSelectSubjectId: (id: string) => void;
   onToggleSound?: (enabled: boolean) => void;
+  onRunningChange?: (running: boolean) => void;
   theme?: 'dark' | 'light';
 }
 
@@ -36,6 +37,7 @@ export const PomodoroTimer: React.FC<PomodoroTimerProps> = ({
   selectedSubjectId,
   onSelectSubjectId,
   onToggleSound,
+  onRunningChange,
   theme = 'dark',
 }) => {
   const { t } = useI18n();
@@ -49,6 +51,11 @@ export const PomodoroTimer: React.FC<PomodoroTimerProps> = ({
   const [sessionTopic, setSessionTopic] = useState<string>('');
   const [soundActive, setSoundActive] = useState<boolean>(settings.soundEnabled);
   const [isFocusOverlayOpen, setIsFocusOverlayOpen] = useState<boolean>(false);
+
+  // Notify parent of running state changes
+  useEffect(() => {
+    onRunningChange?.(isRunning);
+  }, [isRunning, onRunningChange]);
 
   // Synchronize internal soundActive state when changed from Settings
   useEffect(() => {

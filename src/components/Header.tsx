@@ -13,6 +13,7 @@ import {
   Info,
   Zap,
   Globe,
+  Radio,
 } from 'lucide-react';
 import { AppLanguage, AppTheme, SyncStatus, GoogleUserProfile } from '../types';
 import { useI18n } from '../i18n';
@@ -152,6 +153,13 @@ export const Header: React.FC<HeaderProps> = ({
             className="hover:opacity-100 hover:text-[#DC2626] transition-colors whitespace-nowrap shrink-0"
           >
             {t('nav.pomodoro')}
+          </a>
+          <a
+            href="#radio"
+            className="hover:opacity-100 hover:text-[#DC2626] transition-colors whitespace-nowrap shrink-0 flex items-center gap-1.5"
+          >
+            <Radio size={13} className="text-[#DC2626]" />
+            <span>{language === 'pt-BR' ? 'RÁDIO' : 'RADIO'}</span>
           </a>
           <a
             href="#metas"

@@ -29,6 +29,7 @@ import { PomodoroTimer } from './components/PomodoroTimer';
 import { DailyGoals } from './components/DailyGoals';
 import { ConsistencyCharts } from './components/ConsistencyCharts';
 import { SessionsList } from './components/SessionsList';
+import { GarageRadioPlayer } from './components/GarageRadioPlayer';
 import { SessionFormModal } from './components/SessionFormModal';
 import { SubjectManagerModal } from './components/SubjectManagerModal';
 import { SettingsModal } from './components/SettingsModal';
@@ -56,6 +57,7 @@ function MainApp({
   const [isSubjectModalOpen, setIsSubjectModalOpen] = useState(false);
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
   const [highlightedSessionId, setHighlightedSessionId] = useState<string | null>(null);
+  const [isPomodoroRunning, setIsPomodoroRunning] = useState<boolean>(false);
 
   // Selected subject for Pomodoro
   const [selectedSubjectId, setSelectedSubjectId] = useState<string>(() => {
@@ -609,8 +611,8 @@ function MainApp({
           totalHours={totalHours}
         />
 
-        {/* Pomodoro Timer Centerpiece */}
-        <section id="pomodoro" className="w-full">
+        {/* Pomodoro Timer Centerpiece & Garage Radio Ambient Station */}
+        <section id="pomodoro" className="w-full flex flex-col gap-6">
           <PomodoroTimer
             subjects={appState.subjects.filter((s) => !s.deletedAt)}
             settings={appState.pomodoroSettings}
@@ -621,10 +623,19 @@ function MainApp({
                 pomodoroSettings: { ...prev.pomodoroSettings, soundEnabled: enabled },
               }))
             }
+            onRunningChange={setIsPomodoroRunning}
             selectedSubjectId={selectedSubjectId}
             onSelectSubjectId={setSelectedSubjectId}
             theme={appState.theme}
           />
+
+          {/* Garage Radio Ambient Audio Player */}
+          <div id="radio">
+            <GarageRadioPlayer
+              theme={appState.theme}
+              isPomodoroRunning={isPomodoroRunning}
+            />
+          </div>
         </section>
 
         {/* Daily Goals & Checklist Section */}
