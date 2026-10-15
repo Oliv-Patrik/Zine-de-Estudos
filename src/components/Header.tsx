@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   Sun,
   Moon,
@@ -12,6 +12,7 @@ import {
   LogOut,
   Info,
   Zap,
+  Globe,
 } from 'lucide-react';
 import { AppLanguage, AppTheme, SyncStatus, GoogleUserProfile } from '../types';
 import { useI18n } from '../i18n';
@@ -20,6 +21,7 @@ import { MaskingTapeStrip } from './illustrations/PunkStickers';
 interface HeaderProps {
   language: AppLanguage;
   onToggleLanguage: () => void;
+  onChangeLanguage?: (lang: AppLanguage) => void;
   theme: AppTheme;
   onToggleTheme: () => void;
   syncStatus: SyncStatus;
@@ -35,6 +37,7 @@ interface HeaderProps {
 export const Header: React.FC<HeaderProps> = ({
   language,
   onToggleLanguage,
+  onChangeLanguage,
   theme,
   onToggleTheme,
   syncStatus,
@@ -77,6 +80,44 @@ export const Header: React.FC<HeaderProps> = ({
       default:
         return t('sync.localMode');
     }
+  };
+
+  const [isLangMenuOpen, setIsLangMenuOpen] = useState(false);
+  const langMenuRef = useRef<HTMLDivElement>(null);
+  const [focusedLangIndex, setFocusedLangIndex] = useState(0);
+
+  const langOptions: { code: AppLanguage; label: string; short: string }[] = [
+    { code: 'pt-BR', label: 'Português (Brasil)', short: 'PT' },
+    { code: 'en', label: 'English', short: 'EN' },
+  ];
+
+  useEffect(() => {
+    if (!isLangMenuOpen) return;
+    const handleClickOutside = (e: MouseEvent) => {
+      if (langMenuRef.current && !langMenuRef.current.contains(e.target as Node)) {
+        setIsLangMenuOpen(false);
+      }
+    };
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setIsLangMenuOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isLangMenuOpen]);
+
+  const handleSelectLanguage = (code: AppLanguage) => {
+    if (onChangeLanguage) {
+      onChangeLanguage(code);
+    } else if (code !== language) {
+      onToggleLanguage();
+    }
+    setIsLangMenuOpen(false);
   };
 
   return (
@@ -233,18 +274,74 @@ export const Header: React.FC<HeaderProps> = ({
             </div>
           )}
 
-          {/* Language Switcher */}
-          <button
-            onClick={onToggleLanguage}
-            className={`px-2.5 py-1 text-xs font-bold font-stencil tracking-wider border-2 transition-all punk-btn ${
-              isDark
-                ? 'bg-[#15181D] border-[#000000] text-[#A2A9B5] hover:text-white'
-                : 'bg-white border-[#000000] text-[#3C424C] hover:text-[#111317]'
-            }`}
-            title="Alterar idioma / Switch language"
-          >
-            {language === 'pt-BR' ? 'EN' : 'PT'}
-          </button>
+          {/* Language Selector with Globe Icon & Dropdown Menu */}
+          <div className="relative" ref={langMenuRef}>
+            <button
+              type="button"
+              onClick={() => {
+                setIsLangMenuOpen((prev) => !prev);
+                setFocusedLangIndex(language === 'pt-BR' ? 0 : 1);
+              }}
+              aria-haspopup="menu"
+              aria-expanded={isLangMenuOpen}
+              aria-label={t('nav.language') || 'Idioma'}
+              className={`flex items-center gap-1.5 px-2.5 py-1 text-xs font-bold font-stencil tracking-wider border-2 transition-all punk-btn ${
+                isDark
+                  ? 'bg-[#15181D] border-[#000000] text-[#A2A9B5] hover:text-white'
+                  : 'bg-white border-[#000000] text-[#3C424C] hover:text-[#111317]'
+              }`}
+            >
+              <Globe size={14} className="text-[#DC2626] shrink-0" />
+              <span>{language === 'pt-BR' ? 'PT' : 'EN'}</span>
+            </button>
+
+            {isLangMenuOpen && (
+              <div
+                role="menu"
+                aria-orientation="vertical"
+                className={`absolute right-0 mt-2 w-48 border-2 border-black z-50 p-1 shadow-[4px_4px_0px_#000000] ${
+                  isDark ? 'bg-[#15181D] text-[#F5F2EB]' : 'bg-white text-[#111317]'
+                }`}
+                onKeyDown={(e) => {
+                  if (e.key === 'ArrowDown') {
+                    e.preventDefault();
+                    setFocusedLangIndex((prev) => (prev + 1) % langOptions.length);
+                  } else if (e.key === 'ArrowUp') {
+                    e.preventDefault();
+                    setFocusedLangIndex((prev) => (prev - 1 + langOptions.length) % langOptions.length);
+                  } else if (e.key === 'Enter') {
+                    e.preventDefault();
+                    handleSelectLanguage(langOptions[focusedLangIndex].code);
+                  }
+                }}
+              >
+                {langOptions.map((opt, idx) => {
+                  const isSelected = language === opt.code;
+                  const isFocused = focusedLangIndex === idx;
+                  return (
+                    <button
+                      key={opt.code}
+                      role="menuitem"
+                      onClick={() => handleSelectLanguage(opt.code)}
+                      onMouseEnter={() => setFocusedLangIndex(idx)}
+                      className={`w-full flex items-center justify-between px-3 py-2 text-xs font-stencil uppercase tracking-wider text-left transition-colors border ${
+                        isSelected
+                          ? 'bg-[#DC2626] text-white border-black font-black shadow-[2px_2px_0px_#000000]'
+                          : isFocused
+                          ? isDark
+                            ? 'bg-[#252A33] text-white border-transparent'
+                            : 'bg-[#F4EFE6] text-black border-transparent'
+                          : 'border-transparent ' + (isDark ? 'text-[#A2A9B5]' : 'text-[#3C424C]')
+                      }`}
+                    >
+                      <span>{opt.label}</span>
+                      {isSelected && <Check size={14} strokeWidth={3} className="shrink-0 text-white" />}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
 
           {/* Theme Switcher: Dark vs Papel Xerox */}
           <button

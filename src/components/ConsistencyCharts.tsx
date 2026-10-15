@@ -258,6 +258,96 @@ export const ConsistencyCharts: React.FC<ConsistencyChartsProps> = ({
     return bars;
   }, [period, periodOffset, selectedSubjectFilter, dailyTotals, sessions, subjectMap, language]);
 
+  // Label for the displayed period (e.g., Weekly "8 – 14 out 2026", Monthly "Outubro 2026", Yearly "2026", or "HOJE" if current)
+  const currentPeriodLabel = useMemo(() => {
+    const now = new Date();
+    if (periodOffset === 0) {
+      return language === 'pt-BR' ? 'HOJE' : 'TODAY';
+    }
+
+    const shortMonthsPt = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
+    const shortMonthsEn = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const fullMonthsPt = [
+      'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
+      'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
+    ];
+    const fullMonthsEn = [
+      'January', 'February', 'March', 'April', 'May', 'June',
+      'July', 'August', 'September', 'October', 'November', 'December'
+    ];
+
+    if (period === 'weekly') {
+      const targetDate = new Date(now);
+      targetDate.setDate(now.getDate() + periodOffset * 7);
+      const dayOfWeek = targetDate.getDay();
+      const diffToMonday = (dayOfWeek + 6) % 7;
+      const monday = new Date(targetDate);
+      monday.setDate(targetDate.getDate() - diffToMonday);
+      const sunday = new Date(monday);
+      sunday.setDate(monday.getDate() + 6);
+
+      const mMonth = monday.getMonth();
+      const sMonth = sunday.getMonth();
+      const mYear = monday.getFullYear();
+      const sYear = sunday.getFullYear();
+
+      if (language === 'pt-BR') {
+        if (mMonth === sMonth && mYear === sYear) {
+          return `${monday.getDate()} – ${sunday.getDate()} ${shortMonthsPt[mMonth]} ${mYear}`;
+        } else if (mYear === sYear) {
+          return `${monday.getDate()} ${shortMonthsPt[mMonth]} – ${sunday.getDate()} ${shortMonthsPt[sMonth]} ${sYear}`;
+        } else {
+          return `${monday.getDate()} ${shortMonthsPt[mMonth]} ${mYear} – ${sunday.getDate()} ${shortMonthsPt[sMonth]} ${sYear}`;
+        }
+      } else {
+        if (mMonth === sMonth && mYear === sYear) {
+          return `${shortMonthsEn[mMonth]} ${monday.getDate()} – ${sunday.getDate()}, ${mYear}`;
+        } else if (mYear === sYear) {
+          return `${shortMonthsEn[mMonth]} ${monday.getDate()} – ${shortMonthsEn[sMonth]} ${sunday.getDate()}, ${sYear}`;
+        } else {
+          return `${shortMonthsEn[mMonth]} ${monday.getDate()}, ${mYear} – ${shortMonthsEn[sMonth]} ${sunday.getDate()}, ${sYear}`;
+        }
+      }
+    } else if (period === 'monthly') {
+      const target = new Date(now.getFullYear(), now.getMonth() + periodOffset, 1);
+      const monthIdx = target.getMonth();
+      const year = target.getFullYear();
+      return language === 'pt-BR' ? `${fullMonthsPt[monthIdx]} ${year}` : `${fullMonthsEn[monthIdx]} ${year}`;
+    } else {
+      const targetYear = now.getFullYear() + periodOffset;
+      return `${targetYear}`;
+    }
+  }, [period, periodOffset, language]);
+
+  // Check if any sessions exist prior to the displayed period
+  const hasEarlierSessions = useMemo(() => {
+    const activeSessions = sessions.filter((s) => !s.deletedAt);
+    if (activeSessions.length === 0) return false;
+
+    const now = new Date();
+    let currentPeriodStartDateStr = '';
+
+    if (period === 'weekly') {
+      const targetDate = new Date(now);
+      targetDate.setDate(now.getDate() + periodOffset * 7);
+      const dayOfWeek = targetDate.getDay();
+      const diffToMonday = (dayOfWeek + 6) % 7;
+      const monday = new Date(targetDate);
+      monday.setDate(targetDate.getDate() - diffToMonday);
+      currentPeriodStartDateStr = monday.toISOString().slice(0, 10);
+    } else if (period === 'monthly') {
+      const target = new Date(now.getFullYear(), now.getMonth() + periodOffset, 1);
+      const year = target.getFullYear();
+      const month = String(target.getMonth() + 1).padStart(2, '0');
+      currentPeriodStartDateStr = `${year}-${month}-01`;
+    } else {
+      const targetYear = now.getFullYear() + periodOffset;
+      currentPeriodStartDateStr = `${targetYear}-01-01`;
+    }
+
+    return activeSessions.some((s) => s.date < currentPeriodStartDateStr);
+  }, [sessions, period, periodOffset]);
+
   const periodStats = useMemo(() => {
     let totalMinutes = 0;
     let activeDays = 0;
@@ -471,35 +561,84 @@ export const ConsistencyCharts: React.FC<ConsistencyChartsProps> = ({
               ))}
             </div>
 
-            {/* Navigation (Prev / Next / Today) */}
+            {/* Navigation (Prev / Next / Period Label / Today Button) */}
             <div
-              className={`flex items-center gap-1 p-1 border-2 border-black ${
+              tabIndex={0}
+              role="region"
+              aria-label="Navegação de períodos"
+              onKeyDown={(e) => {
+                if (e.key === 'ArrowLeft') {
+                  if (hasEarlierSessions) {
+                    e.preventDefault();
+                    setPeriodOffset((o) => o - 1);
+                  }
+                } else if (e.key === 'ArrowRight') {
+                  if (periodOffset < 0) {
+                    e.preventDefault();
+                    setPeriodOffset((o) => o + 1);
+                  }
+                }
+              }}
+              className={`flex items-center gap-1.5 p-1 border-2 border-black outline-none focus:ring-2 focus:ring-[#DC2626] transition-all ${
                 isDark ? 'bg-[#0B0C0E]' : 'bg-[#EAE4D6]'
               }`}
             >
+              {/* Previous Period Arrow (Left) */}
               <button
-                onClick={() => setPeriodOffset((o) => o - 1)}
-                className="p-1 hover:text-[#DC2626] transition-colors"
-                title={t('analytics.previous')}
+                type="button"
+                onClick={() => {
+                  if (hasEarlierSessions) setPeriodOffset((o) => o - 1);
+                }}
+                disabled={!hasEarlierSessions}
+                aria-disabled={!hasEarlierSessions}
+                className={`p-1.5 transition-colors ${
+                  !hasEarlierSessions
+                    ? 'opacity-30 cursor-not-allowed text-[#717885]'
+                    : 'hover:text-[#DC2626] cursor-pointer'
+                }`}
+                title={!hasEarlierSessions ? t('analytics.noEarlierRecords') : t('analytics.previous')}
               >
                 <ChevronLeft size={16} />
               </button>
-              <button
-                onClick={() => setPeriodOffset(0)}
-                className={`px-2 py-0.5 text-xs font-bold font-stencil uppercase tracking-wider ${
-                  periodOffset === 0 ? 'text-[#DC2626]' : 'opacity-80'
+
+              {/* Central Period Label */}
+              <span
+                className={`px-2.5 py-0.5 text-xs font-bold font-stencil uppercase tracking-wider select-none text-center min-w-[70px] ${
+                  periodOffset === 0 ? 'text-[#DC2626]' : isDark ? 'text-[#F5F2EB]' : 'text-[#111317]'
                 }`}
               >
-                {t('analytics.today')}
-              </button>
+                {currentPeriodLabel}
+              </span>
+
+              {/* Next Period Arrow (Right) */}
               <button
-                onClick={() => setPeriodOffset((o) => o + 1)}
+                type="button"
+                onClick={() => {
+                  if (periodOffset < 0) setPeriodOffset((o) => o + 1);
+                }}
                 disabled={periodOffset >= 0}
-                className="p-1 disabled:opacity-30 hover:text-[#DC2626] transition-colors"
-                title={t('analytics.next')}
+                aria-disabled={periodOffset >= 0}
+                className={`p-1.5 transition-colors ${
+                  periodOffset >= 0
+                    ? 'opacity-30 cursor-not-allowed text-[#717885]'
+                    : 'hover:text-[#DC2626] cursor-pointer'
+                }`}
+                title={periodOffset >= 0 ? t('analytics.noLaterRecords') : t('analytics.next')}
               >
                 <ChevronRight size={16} />
               </button>
+
+              {/* "Hoje" Button - visible only outside the current period */}
+              {periodOffset !== 0 && (
+                <button
+                  type="button"
+                  onClick={() => setPeriodOffset(0)}
+                  className="ml-1 px-2.5 py-1 text-xs font-bold font-stencil uppercase tracking-wider bg-[#DC2626] text-white border border-black shadow-[2px_2px_0px_#000000] hover:bg-[#B91C1C] active:translate-y-0.5 transition-all cursor-pointer"
+                  title={t('analytics.backToToday')}
+                >
+                  {t('analytics.backToToday')}
+                </button>
+              )}
             </div>
 
             {/* Subject Filter */}

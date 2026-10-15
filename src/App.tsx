@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import {
   AppStateData,
   StudySession,
@@ -18,8 +18,11 @@ import {
   fetchFromDrive,
   uploadToDrive,
   getCachedToken,
+  mergeAppState,
+  isTokenExpired,
 } from './lib/googleDrive';
-import { I18nProvider } from './i18n';
+import { I18nProvider, useI18n } from './i18n';
+import { ToastProvider, useToast } from './components/Toast';
 import { Header } from './components/Header';
 import { HeroSection } from './components/HeroSection';
 import { PomodoroTimer } from './components/PomodoroTimer';
@@ -35,8 +38,16 @@ import { Footer } from './components/Footer';
 const GOOGLE_CLIENT_ID = (import.meta as any).env?.VITE_GOOGLE_CLIENT_ID || '';
 const STORAGE_LOGGED_IN_KEY = 'caderno_user_logged_in';
 
-export default function App() {
-  const [appState, setAppState] = useState<AppStateData>(() => loadLocalState());
+function MainApp({
+  appState,
+  setAppState,
+}: {
+  appState: AppStateData;
+  setAppState: React.Dispatch<React.SetStateAction<AppStateData>>;
+}) {
+  const { t, setLanguage } = useI18n();
+  const { showToast } = useToast();
+
   const [syncStatus, setSyncStatus] = useState<SyncStatus>('local');
   const [userProfile, setUserProfile] = useState<GoogleUserProfile | null>(null);
 
@@ -44,30 +55,21 @@ export default function App() {
   const [editingSession, setEditingSession] = useState<StudySession | null>(null);
   const [isSubjectModalOpen, setIsSubjectModalOpen] = useState(false);
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
+  const [highlightedSessionId, setHighlightedSessionId] = useState<string | null>(null);
 
   // Selected subject for Pomodoro
   const [selectedSubjectId, setSelectedSubjectId] = useState<string>(() => {
     return appState.subjects[0]?.id || '';
   });
 
-  // Sync state changes to localStorage and Drive (if authenticated)
+  // State update helper
   const updateState = useCallback((updater: (prev: AppStateData) => AppStateData) => {
     setAppState((prev) => {
       const next = updater(prev);
       saveLocalState(next);
-
-      // If connected to Google Drive, trigger background cloud push
-      const token = getCachedToken();
-      if (token) {
-        setSyncStatus('syncing');
-        uploadToDrive(token, next)
-          .then((success) => setSyncStatus(success ? 'synced' : 'error'))
-          .catch(() => setSyncStatus('error'));
-      }
-
       return next;
     });
-  }, []);
+  }, [setAppState]);
 
   // Update theme on root document
   useEffect(() => {
@@ -99,22 +101,19 @@ export default function App() {
     };
   }, []);
 
-  // Sync helper with Google Drive
+  // Sync helper with Google Drive (downloads, merges via CRDT, and uploads merged state)
   const syncWithDrive = useCallback(async (token: string, currentState: AppStateData) => {
     try {
       setSyncStatus('syncing');
       const remoteData = await fetchFromDrive(token);
       if (remoteData) {
-        // Conflict resolution: compare lastModified
-        if (remoteData.lastModified > currentState.lastModified) {
-          setAppState(remoteData);
-          saveLocalState(remoteData);
-        } else {
-          // Local is newer or equal, push local
-          await uploadToDrive(token, currentState);
-        }
+        // Merge with CRDT last-write-wins by entity id and preserving deletedAt tombstones
+        const merged = mergeAppState(currentState, remoteData);
+        setAppState(merged);
+        saveLocalState(merged);
+        await uploadToDrive(token, merged);
       } else {
-        // First time cloud sync, create initial file in Drive
+        // Initial file creation in appDataFolder
         await uploadToDrive(token, currentState);
       }
       setSyncStatus('synced');
@@ -122,7 +121,68 @@ export default function App() {
       console.error('Drive sync error:', err);
       setSyncStatus('error');
     }
-  }, []);
+  }, [setAppState]);
+
+  // Debounced auto-save to Google Drive on every change (~2s debounce)
+  const isInitialMount = useRef(true);
+  const debounceSyncTimerRef = useRef<any>(null);
+
+  useEffect(() => {
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
+      return;
+    }
+    const token = getCachedToken();
+    if (!token || !userProfile || !GOOGLE_CLIENT_ID) return;
+
+    if (debounceSyncTimerRef.current) {
+      clearTimeout(debounceSyncTimerRef.current);
+    }
+
+    setSyncStatus('syncing');
+    debounceSyncTimerRef.current = setTimeout(async () => {
+      try {
+        let currentToken = getCachedToken();
+        if (!currentToken || isTokenExpired()) {
+          requestGoogleAccessToken(
+            GOOGLE_CLIENT_ID,
+            async (newToken) => {
+              const ok = await uploadToDrive(newToken, appState);
+              setSyncStatus(ok ? 'synced' : 'error');
+            },
+            () => setSyncStatus('error'),
+            true
+          );
+          return;
+        }
+
+        const ok = await uploadToDrive(currentToken, appState);
+        if (ok) {
+          setSyncStatus('synced');
+        } else {
+          // Retry once with silent token renewal
+          requestGoogleAccessToken(
+            GOOGLE_CLIENT_ID,
+            async (newToken) => {
+              const retryOk = await uploadToDrive(newToken, appState);
+              setSyncStatus(retryOk ? 'synced' : 'error');
+            },
+            () => setSyncStatus('error'),
+            true
+          );
+        }
+      } catch (e) {
+        console.error('Debounced upload error:', e);
+        setSyncStatus('error');
+      }
+    }, 2000);
+
+    return () => {
+      if (debounceSyncTimerRef.current) {
+        clearTimeout(debounceSyncTimerRef.current);
+      }
+    };
+  }, [appState, userProfile]);
 
   // Check login on startup & auto-sync if previously authenticated
   useEffect(() => {
@@ -131,7 +191,6 @@ export default function App() {
     const wasLoggedIn = localStorage.getItem(STORAGE_LOGGED_IN_KEY) === 'true';
     if (!wasLoggedIn) return;
 
-    // Give GIS script a brief moment to initialize
     const initTimer = setTimeout(() => {
       requestGoogleAccessToken(
         GOOGLE_CLIENT_ID,
@@ -148,7 +207,6 @@ export default function App() {
         },
         (err) => {
           console.warn('Silent auto-auth on load error:', err);
-          // Don't disturb the user; stay in local mode
           setSyncStatus('local');
         },
         true // silent request
@@ -156,7 +214,7 @@ export default function App() {
     }, 500);
 
     return () => clearTimeout(initTimer);
-  }, []); // Run on startup
+  }, []);
 
   // Silent token renewal interval while session is active (every 45 minutes)
   useEffect(() => {
@@ -223,23 +281,28 @@ export default function App() {
     }
   };
 
+  // Filter out soft-deleted items for application calculations and views
+  const activeSessions = useMemo(() => {
+    return appState.sessions.filter((s) => !s.deletedAt);
+  }, [appState.sessions]);
+
   // Calculate today's studied minutes
   const todayDateStr = getTodayDateString();
   const todayStudiedMinutes = useMemo(() => {
-    return appState.sessions
+    return activeSessions
       .filter((s) => s.date === todayDateStr)
       .reduce((acc, curr) => acc + curr.durationMinutes, 0);
-  }, [appState.sessions, todayDateStr]);
+  }, [activeSessions, todayDateStr]);
 
   // Total accumulated hours
   const totalHours = useMemo(() => {
-    const totalMinutes = appState.sessions.reduce((acc, curr) => acc + curr.durationMinutes, 0);
+    const totalMinutes = activeSessions.reduce((acc, curr) => acc + curr.durationMinutes, 0);
     return Math.round(totalMinutes / 60);
-  }, [appState.sessions]);
+  }, [activeSessions]);
 
   // Current streak
   const currentStreak = useMemo(() => {
-    const dateSet = new Set(appState.sessions.map((s) => s.date));
+    const dateSet = new Set(activeSessions.map((s) => s.date));
     const today = new Date();
     const todayStr = today.toISOString().slice(0, 10);
     const yesterday = new Date();
@@ -248,6 +311,7 @@ export default function App() {
 
     let streak = 0;
     const checkDate = dateSet.has(todayStr) ? today : dateSet.has(yesterdayStr) ? yesterday : null;
+
     if (checkDate) {
       const d = new Date(checkDate);
       while (true) {
@@ -261,47 +325,128 @@ export default function App() {
       }
     }
     return streak;
-  }, [appState.sessions]);
+  }, [activeSessions]);
+
+  // Scroll to session card in history with pulsing highlight
+  const viewSessionInHistory = useCallback((sessionId: string) => {
+    setHighlightedSessionId(sessionId);
+
+    const prefersReducedMotion =
+      typeof window !== 'undefined' &&
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    setTimeout(() => {
+      const element = document.getElementById(`session-row-${sessionId}`);
+      if (element) {
+        element.scrollIntoView({
+          behavior: prefersReducedMotion ? 'auto' : 'smooth',
+          block: 'center',
+        });
+      } else {
+        const historySection = document.getElementById('sessoes');
+        if (historySection) {
+          historySection.scrollIntoView({
+            behavior: prefersReducedMotion ? 'auto' : 'smooth',
+            block: 'start',
+          });
+        }
+      }
+    }, 60);
+
+    setTimeout(() => {
+      setHighlightedSessionId((current) => (current === sessionId ? null : current));
+    }, 2200);
+  }, []);
 
   // Session handlers
   const handleSaveSession = (
     sessionData: Omit<StudySession, 'id' | 'createdAt'>,
     existingId?: string
   ) => {
+    let createdId = existingId;
+    const now = Date.now();
+
     updateState((prev) => {
       if (existingId) {
         // Update existing session
         const updated = prev.sessions.map((s) =>
-          s.id === existingId ? { ...s, ...sessionData } : s
+          s.id === existingId ? { ...s, ...sessionData, updatedAt: now } : s
         );
         return { ...prev, sessions: updated };
       } else {
         // Add new session
+        createdId = `sess-${now}-${Math.random().toString(36).slice(2, 7)}`;
         const newSession: StudySession = {
           ...sessionData,
-          id: `sess-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
-          createdAt: Date.now(),
+          id: createdId,
+          createdAt: now,
+          updatedAt: now,
         };
         return { ...prev, sessions: [newSession, ...prev.sessions] };
       }
     });
+
+    // Requirement 4: Show Toast with "Ver no histórico" button after saving manual or Pomodoro session
+    if (!existingId && createdId) {
+      const isFromPomodoro = sessionData.fromPomodoro;
+      const message = isFromPomodoro
+        ? t('sessions.pomodoroSessionSaved')
+        : t('sessions.manualSessionSaved');
+
+      const targetId = createdId;
+      showToast({
+        id: `created-${targetId}`,
+        message,
+        duration: 8000,
+        action: {
+          label: t('sessions.viewInHistory'),
+          onClick: () => {
+            viewSessionInHistory(targetId);
+          },
+        },
+      });
+    }
   };
 
   const handleDeleteSession = (sessionId: string) => {
+    const now = Date.now();
     updateState((prev) => ({
       ...prev,
-      sessions: prev.sessions.filter((s) => s.id !== sessionId),
+      sessions: prev.sessions.map((s) =>
+        s.id === sessionId ? { ...s, deletedAt: now, updatedAt: now } : s
+      ),
     }));
+  };
+
+  const handleRestoreSession = (session: StudySession) => {
+    const now = Date.now();
+    updateState((prev) => {
+      const exists = prev.sessions.some((s) => s.id === session.id);
+      if (exists) {
+        return {
+          ...prev,
+          sessions: prev.sessions.map((s) =>
+            s.id === session.id ? { ...s, deletedAt: null, updatedAt: now } : s
+          ),
+        };
+      }
+      return {
+        ...prev,
+        sessions: [{ ...session, deletedAt: null, updatedAt: now }, ...prev.sessions],
+      };
+    });
   };
 
   // Goal task handlers
   const handleAddTask = (text: string) => {
+    const now = Date.now();
     const newTask: GoalTask = {
-      id: `task-${Date.now()}`,
+      id: `task-${now}`,
       text,
       completed: false,
       date: todayDateStr,
-      createdAt: Date.now(),
+      createdAt: now,
+      updatedAt: now,
     };
     updateState((prev) => ({
       ...prev,
@@ -310,16 +455,22 @@ export default function App() {
   };
 
   const handleToggleTask = (taskId: string) => {
+    const now = Date.now();
     updateState((prev) => ({
       ...prev,
-      goalTasks: prev.goalTasks.map((t) => (t.id === taskId ? { ...t, completed: !t.completed } : t)),
+      goalTasks: prev.goalTasks.map((t) =>
+        t.id === taskId ? { ...t, completed: !t.completed, updatedAt: now } : t
+      ),
     }));
   };
 
   const handleDeleteTask = (taskId: string) => {
+    const now = Date.now();
     updateState((prev) => ({
       ...prev,
-      goalTasks: prev.goalTasks.filter((t) => t.id !== taskId),
+      goalTasks: prev.goalTasks.map((t) =>
+        t.id === taskId ? { ...t, deletedAt: now, updatedAt: now } : t
+      ),
     }));
   };
 
@@ -332,11 +483,13 @@ export default function App() {
 
   // Subject handlers
   const handleAddSubject = (name: string, color: string) => {
+    const now = Date.now();
     const newSubj: Subject = {
-      id: `subj-${Date.now()}`,
+      id: `subj-${now}`,
       name,
       color,
-      createdAt: Date.now(),
+      createdAt: now,
+      updatedAt: now,
     };
     updateState((prev) => ({
       ...prev,
@@ -346,16 +499,22 @@ export default function App() {
   };
 
   const handleUpdateSubject = (id: string, name: string, color: string) => {
+    const now = Date.now();
     updateState((prev) => ({
       ...prev,
-      subjects: prev.subjects.map((s) => (s.id === id ? { ...s, name, color } : s)),
+      subjects: prev.subjects.map((s) =>
+        s.id === id ? { ...s, name, color, updatedAt: now } : s
+      ),
     }));
   };
 
   const handleToggleArchiveSubject = (id: string) => {
+    const now = Date.now();
     updateState((prev) => ({
       ...prev,
-      subjects: prev.subjects.map((s) => (s.id === id ? { ...s, archived: !s.archived } : s)),
+      subjects: prev.subjects.map((s) =>
+        s.id === id ? { ...s, archived: !s.archived, updatedAt: now } : s
+      ),
     }));
   };
 
@@ -368,21 +527,22 @@ export default function App() {
   };
 
   const handleExportJson = () => {
-    const content = JSON.stringify(appState, null, 2);
-    const blob = new Blob([content], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `caderno_estudos_backup_${new Date().toISOString().slice(0, 10)}.json`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
+    const dataStr = 'data:text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(appState, null, 2));
+    const downloadAnchor = document.createElement('a');
+    downloadAnchor.setAttribute('href', dataStr);
+    downloadAnchor.setAttribute('download', `zine-de-estudos-backup-${todayDateStr}.json`);
+    document.body.appendChild(downloadAnchor);
+    downloadAnchor.click();
+    downloadAnchor.remove();
   };
 
-  const handleImportJson = (imported: AppStateData) => {
-    setAppState(imported);
-    saveLocalState(imported);
+  const handleImportJson = (jsonData: AppStateData) => {
+    setAppState(jsonData);
+    saveLocalState(jsonData);
+    const token = getCachedToken();
+    if (token) {
+      uploadToDrive(token, jsonData);
+    }
   };
 
   const handleLoadDemoData = () => {
@@ -392,165 +552,184 @@ export default function App() {
   };
 
   const handleClearAllData = () => {
-    const clean = clearAllLocalData();
-    setAppState(clean);
+    const empty = clearAllLocalData();
+    setAppState(empty);
   };
 
-  // Theme & Language toggles
   const handleToggleTheme = () => {
-    const nextTheme: AppTheme = appState.theme === 'dark' ? 'light' : 'dark';
-    updateState((prev) => ({ ...prev, theme: nextTheme }));
+    const newTheme: AppTheme = appState.theme === 'dark' ? 'light' : 'dark';
+    updateState((prev) => ({ ...prev, theme: newTheme }));
   };
 
   const handleToggleLanguage = () => {
-    const nextLang: AppLanguage = appState.language === 'pt-BR' ? 'en' : 'pt-BR';
-    updateState((prev) => ({ ...prev, language: nextLang }));
+    const newLang: AppLanguage = appState.language === 'pt-BR' ? 'en' : 'pt-BR';
+    setLanguage(newLang);
+    updateState((prev) => ({ ...prev, language: newLang }));
   };
 
-  const activeSubject = appState.subjects.find((s) => s.id === selectedSubjectId) || appState.subjects[0];
+  const handleChangeLanguage = (newLang: AppLanguage) => {
+    setLanguage(newLang);
+    updateState((prev) => ({ ...prev, language: newLang }));
+  };
+
+  const isDark = appState.theme === 'dark';
 
   return (
-    <I18nProvider
-      initialLang={appState.language}
-      onLanguageChange={(l) => updateState((prev) => ({ ...prev, language: l }))}
+    <div
+      className={`min-h-screen flex flex-col transition-colors selection:bg-[#DC2626] selection:text-white relative ${
+        isDark ? 'bg-[#0B0C0E] text-[#F5F2EB]' : 'bg-[#F3EFE6] text-[#111317]'
+      }`}
     >
-      <div className="min-h-screen flex flex-col risograph-texture">
-        {/* Top Bar Header */}
-        <Header
-          language={appState.language}
-          onToggleLanguage={handleToggleLanguage}
+      {/* Header Bar */}
+      <Header
+        language={appState.language}
+        onToggleLanguage={handleToggleLanguage}
+        onChangeLanguage={handleChangeLanguage}
+        theme={appState.theme}
+        onToggleTheme={handleToggleTheme}
+        syncStatus={syncStatus}
+        onTriggerSync={handleTriggerSync}
+        onOpenSettings={() => setIsSettingsModalOpen(true)}
+        onOpenNewSession={() => {
+          setEditingSession(null);
+          setIsSessionModalOpen(true);
+        }}
+        userProfile={userProfile}
+        isClientIdConfigured={!!GOOGLE_CLIENT_ID}
+        onSignInGoogle={handleSignInGoogle}
+        onSignOutGoogle={handleSignOutGoogle}
+      />
+
+      {/* Main Content Area */}
+      <main className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 flex flex-col gap-12 sm:gap-16 py-6 sm:py-8">
+        {/* Hero Section */}
+        <HeroSection
           theme={appState.theme}
-          onToggleTheme={handleToggleTheme}
-          syncStatus={syncStatus}
-          onTriggerSync={handleTriggerSync}
-          onOpenSettings={() => setIsSettingsModalOpen(true)}
-          onOpenNewSession={() => {
-            setEditingSession(null);
+          currentStreak={currentStreak}
+          totalHours={totalHours}
+        />
+
+        {/* Pomodoro Timer Centerpiece */}
+        <section id="pomodoro" className="w-full">
+          <PomodoroTimer
+            subjects={appState.subjects.filter((s) => !s.deletedAt)}
+            settings={appState.pomodoroSettings}
+            onSessionComplete={(sess) => handleSaveSession(sess)}
+            onToggleSound={(enabled) =>
+              updateState((prev) => ({
+                ...prev,
+                pomodoroSettings: { ...prev.pomodoroSettings, soundEnabled: enabled },
+              }))
+            }
+            selectedSubjectId={selectedSubjectId}
+            onSelectSubjectId={setSelectedSubjectId}
+            theme={appState.theme}
+          />
+        </section>
+
+        {/* Daily Goals & Checklist Section */}
+        <DailyGoals
+          todayStudiedMinutes={todayStudiedMinutes}
+          targetMinutes={appState.dailyTargetMinutes}
+          onUpdateTargetMinutes={handleUpdateTargetMinutes}
+          tasks={appState.goalTasks.filter((t) => !t.deletedAt)}
+          onAddTask={handleAddTask}
+          onToggleTask={handleToggleTask}
+          onDeleteTask={handleDeleteTask}
+          theme={appState.theme}
+        />
+
+        {/* Consistency Charts & Heatmap */}
+        <ConsistencyCharts
+          sessions={activeSessions}
+          subjects={appState.subjects.filter((s) => !s.deletedAt)}
+          theme={appState.theme}
+        />
+
+        {/* Study Sessions Log & History */}
+        <SessionsList
+          sessions={activeSessions}
+          subjects={appState.subjects.filter((s) => !s.deletedAt)}
+          onEditSession={(sess) => {
+            setEditingSession(sess);
             setIsSessionModalOpen(true);
           }}
-          userProfile={userProfile}
-          isClientIdConfigured={!!GOOGLE_CLIENT_ID}
-          onSignInGoogle={handleSignInGoogle}
-          onSignOutGoogle={handleSignOutGoogle}
-        />
-
-        {/* Main Content Area */}
-        <main className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 flex flex-col gap-12 sm:gap-16">
-          {/* Hero Section */}
-          <HeroSection
-            theme={appState.theme}
-            currentStreak={currentStreak}
-            totalHours={totalHours}
-          />
-
-          {/* Pomodoro Timer Centerpiece */}
-          <section id="pomodoro" className="w-full">
-            <PomodoroTimer
-              subjects={appState.subjects}
-              settings={appState.pomodoroSettings}
-              onSessionComplete={(sess) => handleSaveSession(sess)}
-              onToggleSound={(enabled) =>
-                updateState((prev) => ({
-                  ...prev,
-                  pomodoroSettings: { ...prev.pomodoroSettings, soundEnabled: enabled },
-                }))
-              }
-              selectedSubjectId={selectedSubjectId}
-              onSelectSubjectId={setSelectedSubjectId}
-              theme={appState.theme}
-            />
-          </section>
-
-          {/* Daily Goals & Checklist Section (Breath of Contrast Block) */}
-          <DailyGoals
-            todayStudiedMinutes={todayStudiedMinutes}
-            targetMinutes={appState.dailyTargetMinutes}
-            onUpdateTargetMinutes={handleUpdateTargetMinutes}
-            tasks={appState.goalTasks}
-            onAddTask={handleAddTask}
-            onToggleTask={handleToggleTask}
-            onDeleteTask={handleDeleteTask}
-            theme={appState.theme}
-          />
-
-          {/* Consistency Charts & Heatmap */}
-          <ConsistencyCharts
-            sessions={appState.sessions}
-            subjects={appState.subjects}
-            theme={appState.theme}
-          />
-
-          {/* Study Sessions Log & History */}
-          <SessionsList
-            sessions={appState.sessions}
-            subjects={appState.subjects}
-            onEditSession={(sess) => {
-              setEditingSession(sess);
-              setIsSessionModalOpen(true);
-            }}
-            onDeleteSession={handleDeleteSession}
-            onOpenNewSessionModal={() => {
-              setEditingSession(null);
-              setIsSessionModalOpen(true);
-            }}
-            theme={appState.theme}
-          />
-        </main>
-
-        {/* Footer */}
-        <Footer
-          onOpenSettings={() => setIsSettingsModalOpen(true)}
-          theme={appState.theme}
-        />
-
-        {/* Mobile Thumb Navigation */}
-        <MobileBottomNav
-          onOpenNewSession={() => {
+          onDeleteSession={handleDeleteSession}
+          onRestoreSession={handleRestoreSession}
+          onOpenNewSessionModal={() => {
             setEditingSession(null);
             setIsSessionModalOpen(true);
           }}
           theme={appState.theme}
+          highlightedSessionId={highlightedSessionId}
         />
+      </main>
 
-        {/* Modals & Full-screen Overlays */}
-        <SessionFormModal
-          isOpen={isSessionModalOpen}
-          onClose={() => {
-            setIsSessionModalOpen(false);
-            setEditingSession(null);
-          }}
-          onSave={handleSaveSession}
-          subjects={appState.subjects}
-          onOpenSubjectManager={() => {
-            setIsSessionModalOpen(false);
-            setIsSubjectModalOpen(true);
-          }}
-          editingSession={editingSession}
-          theme={appState.theme}
-        />
+      {/* Footer */}
+      <Footer
+        onOpenSettings={() => setIsSettingsModalOpen(true)}
+        theme={appState.theme}
+      />
 
-        <SubjectManagerModal
-          isOpen={isSubjectModalOpen}
-          onClose={() => setIsSubjectModalOpen(false)}
-          subjects={appState.subjects}
-          onAddSubject={handleAddSubject}
-          onUpdateSubject={handleUpdateSubject}
-          onToggleArchiveSubject={handleToggleArchiveSubject}
-          theme={appState.theme}
-        />
+      {/* Mobile Thumb Navigation */}
+      <MobileBottomNav
+        onOpenNewSession={() => {
+          setEditingSession(null);
+          setIsSessionModalOpen(true);
+        }}
+        theme={appState.theme}
+      />
 
-        <SettingsModal
-          isOpen={isSettingsModalOpen}
-          onClose={() => setIsSettingsModalOpen(false)}
-          settings={appState.pomodoroSettings}
-          onUpdateSettings={handleUpdateSettings}
-          onExportJson={handleExportJson}
-          onImportJson={handleImportJson}
-          onLoadDemoData={handleLoadDemoData}
-          onClearAllData={handleClearAllData}
-          theme={appState.theme}
-        />
-      </div>
+      {/* Modals & Full-screen Overlays */}
+      <SessionFormModal
+        isOpen={isSessionModalOpen}
+        onClose={() => {
+          setIsSessionModalOpen(false);
+          setEditingSession(null);
+        }}
+        onSave={handleSaveSession}
+        subjects={appState.subjects.filter((s) => !s.deletedAt)}
+        onOpenSubjectManager={() => {
+          setIsSessionModalOpen(false);
+          setIsSubjectModalOpen(true);
+        }}
+        editingSession={editingSession}
+        theme={appState.theme}
+      />
+
+      <SubjectManagerModal
+        isOpen={isSubjectModalOpen}
+        onClose={() => setIsSubjectModalOpen(false)}
+        subjects={appState.subjects.filter((s) => !s.deletedAt)}
+        onAddSubject={handleAddSubject}
+        onUpdateSubject={handleUpdateSubject}
+        onToggleArchiveSubject={handleToggleArchiveSubject}
+        theme={appState.theme}
+      />
+
+      <SettingsModal
+        isOpen={isSettingsModalOpen}
+        onClose={() => setIsSettingsModalOpen(false)}
+        settings={appState.pomodoroSettings}
+        onUpdateSettings={handleUpdateSettings}
+        onExportJson={handleExportJson}
+        onImportJson={handleImportJson}
+        onLoadDemoData={handleLoadDemoData}
+        onClearAllData={handleClearAllData}
+        theme={appState.theme}
+      />
+    </div>
+  );
+}
+
+export default function App() {
+  const [appState, setAppState] = useState<AppStateData>(() => loadLocalState());
+
+  return (
+    <I18nProvider initialLang={appState.language}>
+      <ToastProvider>
+        <MainApp appState={appState} setAppState={setAppState} />
+      </ToastProvider>
     </I18nProvider>
   );
 }

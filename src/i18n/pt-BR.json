@@ -12,7 +12,10 @@
     "goals": "Metas do Dia",
     "history": "Sessões",
     "analytics": "Constância",
-    "settings": "Ajustes"
+    "settings": "Ajustes",
+    "language": "Idioma",
+    "portuguese": "Português (Brasil)",
+    "english": "English"
   },
   "greetings": {
     "morning": "Café preto e foco total. Estudar também é resistir.",
@@ -83,6 +86,9 @@
     "edit": "Editar",
     "confirmDelete": "Tem certeza que deseja rasgar esta sessão do zine?",
     "sessionDeleted": "Sessão removida do zine.",
+    "manualSessionSaved": "Sessão registrada! Ela está no REGISTRO DE COMBATE.",
+    "pomodoroSessionSaved": "Foco concluído e salvo no REGISTRO DE COMBATE.",
+    "viewInHistory": "Ver no histórico",
     "undo": "Desfazer",
     "noSessions": "Nenhuma sessão registrada recentemente.",
     "startFirstSession": "Acione o Pomodoro ou registre uma sessão manual agora.",
@@ -120,6 +126,9 @@
     "previous": "Anterior",
     "next": "Próximo",
     "today": "Hoje",
+    "noEarlierRecords": "Sem registros anteriores",
+    "noLaterRecords": "Período atual",
+    "backToToday": "Hoje",
     "tooltip": {
       "minutes": "{minutes} min no combate",
       "sessions": "{count} sessão(ões)"

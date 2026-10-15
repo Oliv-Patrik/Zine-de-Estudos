@@ -5,6 +5,8 @@ export interface Subject {
   icon?: string;
   archived?: boolean;
   createdAt: number;
+  updatedAt?: number;
+  deletedAt?: number | null;
 }
 
 export interface StudySession {
@@ -16,6 +18,8 @@ export interface StudySession {
   notes?: string;
   fromPomodoro?: boolean;
   createdAt: number;
+  updatedAt?: number;
+  deletedAt?: number | null;
 }
 
 export interface GoalTask {
@@ -24,6 +28,8 @@ export interface GoalTask {
   completed: boolean;
   date: string; // YYYY-MM-DD
   createdAt: number;
+  updatedAt?: number;
+  deletedAt?: number | null;
 }
 
 export interface DailyGoalConfig {

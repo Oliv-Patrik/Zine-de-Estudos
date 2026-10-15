@@ -12,7 +12,10 @@
     "goals": "Daily Goals",
     "history": "Sessions",
     "analytics": "Consistency",
-    "settings": "Settings"
+    "settings": "Settings",
+    "language": "Language",
+    "portuguese": "Português (Brasil)",
+    "english": "English"
   },
   "greetings": {
     "morning": "Black coffee and sharp focus. Studying is resisting.",
@@ -83,6 +86,9 @@
     "edit": "Edit",
     "confirmDelete": "Are you sure you want to tear out this session?",
     "sessionDeleted": "Session removed from zine.",
+    "manualSessionSaved": "Session logged! It's in the COMBAT LOG.",
+    "pomodoroSessionSaved": "Focus completed and saved in the COMBAT LOG.",
+    "viewInHistory": "View in log",
     "undo": "Undo",
     "noSessions": "No sessions recorded recently.",
     "startFirstSession": "Fire up the Pomodoro or log a session manually now.",
@@ -120,6 +126,9 @@
     "previous": "Previous",
     "next": "Next",
     "today": "Today",
+    "noEarlierRecords": "No earlier records",
+    "noLaterRecords": "Current period",
+    "backToToday": "Today",
     "tooltip": {
       "minutes": "{minutes} min in action",
       "sessions": "{count} session(s)"

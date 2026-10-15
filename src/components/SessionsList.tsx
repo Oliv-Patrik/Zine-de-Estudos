@@ -12,14 +12,17 @@ import { StudySession, Subject } from '../types';
 import { useI18n } from '../i18n';
 import { EmptyStateMascot } from './illustrations/EmptyStateMascot';
 import { MaskingTapeStrip } from './illustrations/PunkStickers';
+import { useToast } from './Toast';
 
 interface SessionsListProps {
   sessions: StudySession[];
   subjects: Subject[];
   onEditSession: (session: StudySession) => void;
   onDeleteSession: (sessionId: string) => void;
+  onRestoreSession?: (session: StudySession) => void;
   onOpenNewSessionModal: () => void;
   theme?: 'dark' | 'light';
+  highlightedSessionId?: string | null;
 }
 
 export const SessionsList: React.FC<SessionsListProps> = ({
@@ -27,16 +30,17 @@ export const SessionsList: React.FC<SessionsListProps> = ({
   subjects,
   onEditSession,
   onDeleteSession,
+  onRestoreSession,
   onOpenNewSessionModal,
   theme = 'dark',
+  highlightedSessionId = null,
 }) => {
   const { t, formatDate, formatMinutes } = useI18n();
+  const { showToast } = useToast();
   const isDark = theme === 'dark';
 
   const [searchTerm, setSearchTerm] = useState('');
   const [filterSubject, setFilterSubject] = useState('all');
-  const [deletedBackup, setDeletedBackup] = useState<StudySession | null>(null);
-  const [undoTimer, setUndoTimer] = useState<any>(null);
 
   const subjectMap = useMemo(() => {
     const map = new Map<string, Subject>();
@@ -68,21 +72,24 @@ export const SessionsList: React.FC<SessionsListProps> = ({
   }, [sortedSessions, filterSubject, searchTerm, subjectMap]);
 
   const handleDeleteWithUndo = (session: StudySession) => {
-    setDeletedBackup(session);
     onDeleteSession(session.id);
 
-    if (undoTimer) clearTimeout(undoTimer);
-    const timer = setTimeout(() => {
-      setDeletedBackup(null);
-    }, 6000);
-    setUndoTimer(timer);
-  };
-
-  const handleUndo = () => {
-    if (!deletedBackup) return;
-    onEditSession(deletedBackup);
-    setDeletedBackup(null);
-    if (undoTimer) clearTimeout(undoTimer);
+    showToast({
+      id: `delete-${session.id}`,
+      message: t('sessions.sessionDeleted'),
+      duration: 8000,
+      action: {
+        label: t('sessions.undo'),
+        icon: <Undo2 size={13} />,
+        onClick: () => {
+          if (onRestoreSession) {
+            onRestoreSession(session);
+          } else {
+            onEditSession(session);
+          }
+        },
+      },
+    });
   };
 
   return (
@@ -97,22 +104,6 @@ export const SessionsList: React.FC<SessionsListProps> = ({
       <div className="absolute -top-2 left-16">
         <MaskingTapeStrip width="w-24" rotation={-3} />
       </div>
-
-      {/* Toast Banner for Undo */}
-      {deletedBackup && (
-        <div className="mb-6 p-3.5 bg-[#DC2626] text-white border-2 border-black shadow-[4px_4px_0px_#000000] flex items-center justify-between">
-          <span className="text-xs font-bold font-stencil uppercase tracking-wider">
-            {t('sessions.sessionDeleted')}
-          </span>
-          <button
-            onClick={handleUndo}
-            className="flex items-center gap-1.5 px-3 py-1 bg-black text-white border border-white text-xs font-stencil uppercase tracking-wider hover:bg-neutral-900 transition-colors"
-          >
-            <Undo2 size={13} />
-            <span>{t('sessions.undo')}</span>
-          </button>
-        </div>
-      )}
 
       {/* Header & Controls */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
@@ -199,11 +190,18 @@ export const SessionsList: React.FC<SessionsListProps> = ({
             // Slight rotation variation (±0.5 deg) for pasted flyer effect
             const rotation = (sIdx % 3 - 1) * 0.4;
 
+            const isHighlighted = highlightedSessionId === session.id;
+
             return (
               <div
                 key={session.id}
+                id={`session-row-${session.id}`}
                 style={{ transform: `rotate(${rotation}deg)` }}
-                className={`p-4 border-2 border-black transition-all flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 group punk-shadow-sm ${
+                className={`p-4 border-2 transition-all flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 group punk-shadow-sm ${
+                  isHighlighted
+                    ? 'border-[#DC2626] ring-4 ring-[#DC2626] animate-pulse z-20'
+                    : 'border-black'
+                } ${
                   isDark
                     ? 'bg-[#0B0C0E] hover:border-[#DC2626]'
                     : 'bg-[#F3EFE6] hover:border-[#DC2626]'
